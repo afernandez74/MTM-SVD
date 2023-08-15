@@ -59,9 +59,10 @@ start=datetime.now()
 # 1) Load the data
 # -----------------
 
-path = 'D:\\Work\\MannSteinman_Proj\\Data\\HadCRUT4_historic_data\\\\HadCRUT4_temp_nc\\'
+#path to the climate dataset to be utilized
+path = "//Volumes//AlejoED//Work//MannSteinman_Proj//Data//HadCRUT4_historic_data//HadCRUT4_temp_nc//"
 
-files = listdir(path)
+files = listdir(path)   
 files.sort()
 
 print('Load data...')
@@ -119,9 +120,9 @@ w=w.reshape(1,w.shape[0]*w.shape[1],order='F')
 [freq, lfv] = mtm_svd_lfv(tas_ts_annual,nw,kk,dt,w)
 
 # Compute the confidence intervals
-niter = 10    # minimum of 1000 iterations
+niter = 1000    # minimum of 1000 iterations
 sl = [.99,.95,.9,.8,.5]
-[conffreq, conflevel,LFVs] = mtm_svd_conf(tas_ts_annual,nw,kk,dt,niter,sl,w)
+[conffreq, conflevel, LFVs] = mtm_svd_conf(tas_ts_annual,nw,kk,dt,niter,sl,w)
 conflevel = np.asarray(conflevel)
 
 # calculate C.I. mean values for secular and non-secular bands
@@ -130,7 +131,7 @@ fr_sec_ind = np.where(conffreq < fr_sec)[0][-1]
 ci_sec = np.nanmean(conflevel[:,0:fr_sec_ind],axis=1)
 ci_nsec = np.nanmean(conflevel[:,fr_sec_ind+1:],axis=1)
 
-# Adjust C.I values so they match (ask about this)
+# Adjust C.I values so they match
 lfv_mean = np.nanmean(lfv[fr_sec_ind:])
 mean_ci = ci_nsec[-1]
 adj_factor = lfv_mean/mean_ci
@@ -151,59 +152,44 @@ fig.show
     
 print(datetime.now()-start)
 
-# save spectrum data to results folder as pickle file
+# save spectrum data to results folder
 with open(f'results\\analyses\\hadcrut4_lfv_ci_freq_1000_{datetime.now().strftime("%b%d,%Y_%I:%M%p")}','wb') as f:
     pkl.dump([freq,lfv,conffreq,conflevel],f)
 
-plt.plot(freq,lfv)
-#plt.semilogx(conffreq,conflevel[0,:],'--r')
-#xt = [1./10., 1./5., 1./2.]
-plt.xlim([1/100., 1/2.])
-#plt.xticks(xt, [1./each for each in xt])
-plt.xlabel('Frequency [1/year]') ; plt.ylabel('LFV')
-#plt.title('LVF at %i m'%d)
-#plt.savefig('Figs/spectrum_%s_%im.jpg'%(model,d))
-plt.clf()
 
-# Display the plot to allow the user to choose the frequencies associated with peaks
-plt.plot(freq, lfv)
-plt.plot(conffreq, conflevel[0], '--', c='grey')
-plt.show()
-plt.clf()
+# fo = [float(each) for each in input('Enter the frequencies for which there is a significant peak and for which you want to plot the map of variance (separated by commas, no space):').split(',')]
 
-fo = [float(each) for each in input('Enter the frequencies for which there is a significant peak and for which you want to plot the map of variance (separated by commas, no space):').split(',')]
+# # --------------------------------
+# # 3) Reconstruct spatial patterns
+# # --------------------------------
 
-# --------------------------------
-# 3) Reconstruct spatial patterns
-# --------------------------------
+# # Select frequency(ies) (instead of user-interaction selection)
+# #fo = [0.02, 0.05, 0.15, 0.19, 0.24, 0.276, 0.38] 
 
-# Select frequency(ies) (instead of user-interaction selection)
-#fo = [0.02, 0.05, 0.15, 0.19, 0.24, 0.276, 0.38] 
+# # Calculate the reconstruction
 
-# Calculate the reconstruction
+# vexp, totvarexp, iis = mtm_svd_recon(tas_ts_annual,nw,kk,dt,fo)
 
-vexp, totvarexp, iis = mtm_svd_recon(tas_ts_annual,nw,kk,dt,fo)
+# # Plot the map for each frequency peak
 
-# Plot the map for each frequency peak
+# for i in range(len(fo)):
 
-for i in range(len(fo)):
+#  	RV = np.reshape(vexp[i],x.shape, order='F')
 
- 	RV = np.reshape(vexp[i],x.shape, order='F')
+#  	fig, (ax1, ax2) = plt.subplots(2,1,gridspec_kw={'height_ratios':[1,3]},figsize=(5,7))
 
- 	fig, (ax1, ax2) = plt.subplots(2,1,gridspec_kw={'height_ratios':[1,3]},figsize=(5,7))
+#  	ax1.plot(freq, lfv)
+#  	ax1.plot(conffreq, LFVs[0,:], '--', c='grey')
+#  	ax1.plot(freq[iis[i]],lfv[iis[i]],'r*',markersize=10)
+#  	ax1.set_xlabel('Frequency [1/years]')
+#  	ax1.set_title('LVF at %i m')
 
- 	ax1.plot(freq, lfv)
- 	ax1.plot(conffreq, LFVs[0,:], '--', c='grey')
- 	ax1.plot(freq[iis[i]],lfv[iis[i]],'r*',markersize=10)
- 	ax1.set_xlabel('Frequency [1/years]')
- 	ax1.set_title('LVF at %i m')
+#  	pc = ax2.pcolor(x, y, RV, cmap='jet', vmin=0, vmax=50) 
+#  	cbar = fig.colorbar(pc, ax=ax2, orientation='horizontal', pad=0.1)
+#  	cbar.set_label('Variance')
+#  	ax2.set_title('Variance explained by period %.2f yrs'%(1./fo[i]))
 
- 	pc = ax2.pcolor(x, y, RV, cmap='jet', vmin=0, vmax=50) 
- 	cbar = fig.colorbar(pc, ax=ax2, orientation='horizontal', pad=0.1)
- 	cbar.set_label('Variance')
- 	ax2.set_title('Variance explained by period %.2f yrs'%(1./fo[i]))
-
- 	plt.tight_layout()
- 	#plt.savefig('Figs/peak_analysis_%s_%im_%.2fyrs.jpg'%(model,d,1./fo[i]))
- 	#plt.show()
- 	plt.clf()
+#  	plt.tight_layout()
+#  	#plt.savefig('Figs/peak_analysis_%s_%im_%.2fyrs.jpg'%(model,d,1./fo[i]))
+#  	#plt.show()
+#  	plt.clf()

@@ -49,6 +49,7 @@
 #
 
 from mtm_functions_AF import *
+from read_in_CESM_LME_nc import *
 import xarray as xr
 from os import listdir
 import os 
@@ -56,7 +57,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime
 import pickle as pkl
-import subprocess
+
 
 # start timer
 start=datetime.now()
@@ -67,14 +68,21 @@ start=datetime.now()
 # -----------------
 
 #path to the climate dataset to be utilized
-path = "//Volumes//AlejoED//Work//MannSteinman_Proj//Data//CESM_LME_data//2021_CESM_LME_ALL_FORCING//2021_CESM_LME_ALL_FORCING"
+path = "//Volumes//AlejoED//Work//MannSteinman_Proj//Data//CESM_LME_data//2021_CESM_LME_ALL_FORCING//2021_CESM_LME_ALL_FORCING//"
 
 files = listdir(path)   
 files.sort()
 
-return_code = subprocess.call(['python','read_in_CESM_LME_nc.py'])
-
 print('Load data...')
+# read in .nc files and collect lat, lon, sim_number, time and temperature fields 
+# put those fields into a dictionary indexed by simulation number and simulation years
+[dic_CESM, sim_no] = nc_to_dic_CESM(path)
+
+# save output from funcion for later use
+
+# merge dictionary entries that correspond to the same simulations
+# organize simulation data (temperature and time)
+dic_CESM_merged = dic_sim_merge_CESM(dic_CESM, sim_no)
 
 dsl = xr.open_dataset(path+files[0])
 dt = 1 # yearly data (monthly values averaged below)

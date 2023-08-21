@@ -48,6 +48,7 @@
 # ------------------------------------------------------------------
 #
 
+# %% import functions and packages
 from mtm_functions_AF import *
 from read_in_CESM_LME_nc import *
 import xarray as xr
@@ -63,13 +64,13 @@ import pickle as pkl
 start=datetime.now()
 #
 
-# -----------------
-# 1) Load the data
-# -----------------
+
+# %%-----------------
+# 1) Load the raw data and save it to dictionary
+# -------------------
 
 #path to the climate dataset to be utilized
 path = "//Volumes//AlejoED//Work//MannSteinman_Proj//Data//CESM_LME_data//2021_CESM_LME_ALL_FORCING//2021_CESM_LME_ALL_FORCING//"
-
 files = listdir(path)   
 files.sort()
 
@@ -78,11 +79,17 @@ print('Load data...')
 # put those fields into a dictionary indexed by simulation number and simulation years
 [dic_CESM, sim_no] = nc_to_dic_CESM(path)
 
-# save output from funcion for later use
 
+# %%-----------------
+# 2) Merge entries corresponding to same simulations into single dictinoary entries, 
+#    and calculate annual means
+# -------------------
+    
 # merge dictionary entries that correspond to the same simulations
 # organize simulation data (temperature and time)
 dic_CESM_merged = dic_sim_merge_CESM(dic_CESM, sim_no)
+
+
 
 dsl = xr.open_dataset(path+files[0])
 dt = 1 # yearly data (monthly values averaged below)

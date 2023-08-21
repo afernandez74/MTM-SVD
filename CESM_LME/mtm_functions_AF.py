@@ -263,3 +263,20 @@ def annual_means(tas,years):
         j=j+1
     return tas_ts_annual
 
+# Function 5) calculate annual means for monthly data and KEEP gridded data format (3d)
+def annual_means_3d(tas, start_month):
+    n, lat, lon = tas.shape
+    months_per_year = 12
+    full_years = n // months_per_year
+    complete_years = full_years - (start_month > 0)
+    
+    annual_means_3d = np.zeros((complete_years, lat, lon))
+    
+    for year_idx in range(0, complete_years):
+        year_start = year_idx * months_per_year + start_month
+        year_end = year_start + months_per_year
+        year_data = tas[year_start:year_end]
+        annual_means_3d[year_idx] = np.mean(year_data, axis=0)
+
+    return annual_means_3d
+

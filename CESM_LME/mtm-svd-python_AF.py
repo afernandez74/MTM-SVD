@@ -81,13 +81,19 @@ print('Load data...')
 
 
 # %%-----------------
-# 2) Merge entries corresponding to same simulations into single dictinoary entries, 
-#    and calculate annual means
+# 2) Merge entries corresponding to same simulations into single dictinoary entries
 # -------------------
     
 # merge dictionary entries that correspond to the same simulations
 # organize simulation data (temperature and time)
 dic_CESM_merged = dic_sim_merge_CESM(dic_CESM, sim_no)
+
+# %%-----------------
+# 3) Calculate annual means
+# -------------------
+dic_CESM_merged_annual = calc_annual_means_CESM(dic_CESM_merged)
+
+# %%
 
 
 

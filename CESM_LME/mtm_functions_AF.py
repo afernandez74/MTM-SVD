@@ -264,19 +264,38 @@ def annual_means(tas,years):
     return tas_ts_annual
 
 # Function 5) calculate annual means for monthly data and KEEP gridded data format (3d)
-def annual_means_3d(tas, start_month):
-    n, lat, lon = tas.shape
-    months_per_year = 12
-    full_years = n // months_per_year
-    complete_years = full_years - (start_month > 0)
+# always gets rid of first and last year of data to account for incompleteness
+def annual_means_3d(tas,time):
     
-    annual_means_3d = np.zeros((complete_years, lat, lon))
+    time_steps, spatial_x, spatial_y = tas.shape
+        
+    # first and last month and year 
+    month_o = time[0].month
+    year_o = time[0].year
+    month_f = time[-1].month
+    year_f = time[-1].year
     
-    for year_idx in range(0, complete_years):
-        year_start = year_idx * months_per_year + start_month
-        year_end = year_start + months_per_year
-        year_data = tas[year_start:year_end]
-        annual_means_3d[year_idx] = np.mean(year_data, axis=0)
+    # years to keep 
+    complete_years = year_f - year_o - 1
+    
+    # array of years in dataset
+    all_years = [dt.year for dt in time]
 
-    return annual_means_3d
-
+    # Initialize an array to store yearly means
+    yearly_means = np.zeros((complete_years-1, spatial_x, spatial_y))
+    
+    # Calculate yearly means
+    for i in range(complete_years):
+        start_idx = i * 12
+        end_idx = start_idx + 12
+        yearly_data = tas[start_idx:end_idx]
+        yearly_mean = np.mean(yearly_data, axis=0)
+        yearly_means[i] = yearly_mean
+        
+    # Handle the last incomplete year
+    if last_incomplete_months > 0:
+        last_year_data = tas[-last_incomplete_months:]
+        last_year_mean = np.mean(last_year_data, axis=0)
+        yearly_means = np.concatenate((yearly_means, np.expand_dims(last_year_mean, axis=0)), axis=0)
+        
+    return yearly_means

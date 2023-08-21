@@ -116,4 +116,19 @@ def dic_sim_merge_CESM(dicti, sim_no):
         
     return CESM_merged
         
+## ____________________________________________________________________________
+
+def calc_annual_means_CESM(dicti):
+    keys = list(dicti.keys()) # list of keys from old dictionary
+    CESM_merged_annual = {} 
+    lat = dicti[keys[0]].lat
+    lon = dicti[keys[0]].lon
+    
+    for i_key in keys:
+        tas = dicti[i_key].tas
+        time = dicti[i_key].time
+        tas_annual = annual_means_3d(tas,time)
+        CESM_merged_annual[i_key] = sim(dicti[i_key].name,dicti[i_key].sim_no,tas_annual,time_years,lat,lon)
+        
+    return CESM_merged_annual
     

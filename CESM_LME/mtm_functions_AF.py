@@ -268,34 +268,24 @@ def annual_means(tas,years):
 def annual_means_3d(tas,time):
     
     time_steps, spatial_x, spatial_y = tas.shape
+    
+    # array of all years in time array 
+    all_years = np.unique([dt.year for dt in time])
+    # array of years whose data will be kept for annual means (all but first and last year)
+    years_keep = all_years[1:-1]
         
-    # first and last month and year 
-    month_o = time[0].month
-    year_o = time[0].year
-    month_f = time[-1].month
-    year_f = time[-1].year
-    
-    # years to keep 
-    complete_years = year_f - year_o - 1
-    
-    # array of years in dataset
-    all_years = [dt.year for dt in time]
-
     # Initialize an array to store yearly means
-    yearly_means = np.zeros((complete_years-1, spatial_x, spatial_y))
+    yearly_means = np.zeros((len(years_keep), spatial_x, spatial_y))
     
-    # Calculate yearly means
-    for i in range(complete_years):
-        start_idx = i * 12
-        end_idx = start_idx + 12
-        yearly_data = tas[start_idx:end_idx]
-        yearly_mean = np.mean(yearly_data, axis=0)
-        yearly_means[i] = yearly_mean
+    # mofify 'tas' so that it only contains the years to keep 
+    # by obtaining the indexes where the time dimension of 'tas' is within the second 
+    # and second-to-last years
+    ix = np.where((np.array([dt.year for dt in time]) >= years_keep[0]) & (np.array([dt.year for dt in time]) <= years_keep[-1]))
+    tas = tas[ix]
+    
+    # Calculate annual means
+    tas_reshaped = tas.reshape(-1,12,spatial_x,spatial_y)
+    tas_annual = np.mean(tas_reshaped, axis=1)
         
-    # Handle the last incomplete year
-    if last_incomplete_months > 0:
-        last_year_data = tas[-last_incomplete_months:]
-        last_year_mean = np.mean(last_year_data, axis=0)
-        yearly_means = np.concatenate((yearly_means, np.expand_dims(last_year_mean, axis=0)), axis=0)
-        
-    return yearly_means
+    
+    return tas_annual, years_keep

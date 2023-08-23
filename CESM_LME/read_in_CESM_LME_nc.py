@@ -127,8 +127,8 @@ def calc_annual_means_CESM(dicti):
     for i_key in keys:
         tas = dicti[i_key].tas
         time = dicti[i_key].time
-        tas_annual = annual_means_3d(tas,time)
+        tas_annual, time_years= annual_means_3d(tas,time)
         CESM_merged_annual[i_key] = sim(dicti[i_key].name,dicti[i_key].sim_no,tas_annual,time_years,lat,lon)
-        
+        print (dicti[i_key].name)
     return CESM_merged_annual
     

@@ -88,11 +88,14 @@ print('Load data...')
 # organize simulation data (temperature and time)
 dic_CESM_merged = dic_sim_merge_CESM(dic_CESM, sim_no)
 
+# delete unnecessary dictionaries to free memory
+del dic_CESM
+
 # %%-----------------
 # 3) Calculate annual means
 # -------------------
 dic_CESM_merged_annual = calc_annual_means_CESM(dic_CESM_merged)
-
+del dic_CESM_merged
 # %%
 
 

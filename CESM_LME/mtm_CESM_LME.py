@@ -3,52 +3,13 @@
 # for both forced+internal and internal-only series, and produces figures combining
 # all results
 
-# Script for MultiTaper Method-Singular Value Decomposition (MTM-SVD) in python
-#
-# ------------------------------------------------------------------
-#
-# This script is a direct adaptation of the Matlab toolbox developed by
-# Marco Correa-Ramirez and Samuel Hormazabal at 
-# Pontificia Universidad Catolica de Valparaiso
-# Escuela de Ciencias del Mar, Valparaiso, Chile
-# and is available through 
-# http://www.meteo.psu.edu/holocene/public_html/Mann/tools/tools.php
-#
-# This script was adapted by Mathilde Jutras at McGill University, Canada
-# Copyright (C) 2020, Mathilde Jutras
-# and is available under the GNU General Public License v3.0
-# 
-# The script may be used, copied, or redistributed as long as it is cited as follow:
-# Mathilde Jutras. (2020, July 6). mathildejutras/mtm-svd-python: v1.0.0-alpha (Version v1.0.0). Zenodo. http://doi.org/10.5281/zenodo.3932319
-#
-# This software may be used, copied, or redistributed as long as it is not 
-# sold and that this copyright notice is reproduced on each copy made. 
-# This routine is provided as is without any express or implied warranties.
-#
-# Questions or comments to:
-# M. Jutras, mathilde.jutras@mail.mcgill.ca
-#
-# Last update:
-# July 2020
-#
-# ------------------------------------------------------------------
-#
-# The script is structured as follows:
-#
-# In the main script is found in mtm-svd-python.py
-# In the first section, the user can load the data,
-# assuming the outputs are stored in a netcdf format.
-# In the secton section, functions are called to calculate the spectrum
-# The user will then be asked for which frequencies he wants to plot 
-# the spatial patterns associated with the variability.
-# In the third section, the spatial patterns are plotted and saved
-#
-# The required functions are found in mtm_functions.py
-#
-# ------------------------------------------------------------------
-#
+# This Python code is structured as follows: 
+# This pre-processing code handles the raw .nc files that are to be analyzed and 
+# a smaller Python dictionary is then saved locally so that it can go into the 
+# MTM-SVD code
 
 # %% import functions and packages
+
 from mtm_functions_AF import *
 from read_in_CESM_LME_nc import *
 import xarray as xr
@@ -58,11 +19,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime
 import pickle as pkl
-
-
-# start timer
-start=datetime.now()
-#
 
 
 # %%-----------------

@@ -52,10 +52,11 @@ del dic_CESM_merged
 # %%-----------------
 # 4) Save python dictionary to local directory
 # -------------------
-save_path = "CESM_LME_data_dic"
+
+save_path = os.path.expanduser("~/mtm_local/CESM_LME_data_dic/")
 timestamp = datetime.now().strftime("%b%d_%Y_%I.%M%p")
 file_name = f'CESM_LME_data_dic_{timestamp}'
-full_path = os.path.join(save_path, file_name)
+full_path = save_path + file_name
 
 # save data into local directory
 with open(full_path,'wb') as f:

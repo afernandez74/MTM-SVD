@@ -21,7 +21,7 @@ import pickle as pkl
 # -------------------
 
 # file path where dictionary was saved in mtm_preprocessing.py script
-file_path = 'CESM_LME_data_dic/'
+file_path = os.path.expanduser("~/mtm_local/CESM_LME_data_dic/")
 # obtain name of file (only works if one file is present only)
 file = listdir(file_path)[0]
 # save dictionary to dictionary variable
@@ -84,7 +84,7 @@ freq_ref, lfv_ref = mtm_svd_lfv(tas_ref, nw, kk, dt, w)
 # =============================================================================
 # Values for Confidence Interval calculation
 # =============================================================================
-niter = 100    # Recommended -> 1000
+niter = 1000    # Recommended -> 1000
 sl = [.99,.95,.9,.8,.5] # confidence levels
 
 # conflevels -> 1st column secular, 2nd column non secular (only nonsecular matters)
@@ -162,5 +162,30 @@ for i in range(0,tas_inter.shape[2]):
 del freq, lfv, i, tas
 
 # %%-----------------
-# 6) Plot stuff
+# 6) Save stuff
 # -------------------
+
+# add results into a dictionary
+CESM_LME_mtm_svd_results = {
+    'data_source': file_path+file,
+    'sim_ref': sim_ref.name,
+    'lfv_ref': lfv_ref,
+    'freq_ref': freq_ref,
+    'sl': sl,
+    'niter': niter,
+    'conflevels': conflevels,
+    'conflevels_adjusted': adj_ci,
+    'ta_ensemble_mean_global': tas_ens_mn_glob,
+    'lfv_all': lfv_all,
+    'lfv_inter': lfv_inter
+    }
+results_save_path = os.path.expanduser("~/mtm_local/CESM_LME_mtm_svd_results/")
+timestamp = datetime.now().strftime("%b%d_%Y_%I.%M%p")
+file_name = f'CESM_LME_mtm_svd_results{timestamp}'
+full_path = save_path+file_name
+
+with open(results_save_path, 'wb') as f:
+    pkl.dump(CESM_LME_mtm_svd_results, f)
+    /Users/afer/mtm_local/CESM_LME_mtm_svd_results
+
+

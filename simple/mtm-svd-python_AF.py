@@ -46,6 +46,7 @@
 from mtm_functions_AF import *
 import xarray as xr
 from os import listdir
+import os 
 import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime
@@ -138,23 +139,30 @@ adj_factor = lfv_mean/mean_ci
 adj_ci = np.array([ci_sec*adj_factor,ci_nsec*adj_factor])
 
 # Plot the spectrum ___________________________________________
-x = np.array([conffreq[0],conffreq[fr_sec_ind],conffreq[-1]])
+x_ci = np.array([conffreq[0],conffreq[fr_sec_ind],conffreq[-1]])
 fig, ax = plt.subplots()
 ax.plot(freq,lfv)
 plt.xlim([1/100., 1/2.])
 plt.xlabel('Frequency [1/year]') ; plt.ylabel('LFV')
 
 for i in range(0,len(sl)):
-    y = np.array([adj_ci[0,i],adj_ci[1,i],adj_ci[1,i]])
-    ax.plot(x,y)
+    y_ci = np.array([adj_ci[0,i],adj_ci[1,i],adj_ci[1,i]])
+    ax.plot(x_ci,y_ci)
     
 fig.show
+
+fig_name = f'results//LFV_plot//hadcrut4_lfv_ci_{niter}i_{datetime.now().strftime("%b%d,%Y_%I.%M%p")}.pdf'
+os.makedirs(os.path.dirname(fig_name), exist_ok = True)
+plt.savefig(fig_name)
+
     
 print(datetime.now()-start)
 
 # save spectrum data to results folder
-with open(f'results\\analyses\\hadcrut4_lfv_ci_freq_1000_{datetime.now().strftime("%b%d,%Y_%I:%M%p")}','wb') as f:
-    pkl.dump([freq,lfv,conffreq,conflevel],f)
+file_name = f'results//LFV//hadcrut4_lfv_ci_1000_{datetime.now().strftime("%b%d,%Y_%I.%M%p")}'
+os.makedirs(os.path.dirname(file_name), exist_ok = True)
+with open(file_name,'wb') as f:
+    pkl.dump([freq,lfv,conffreq,conflevel,x_ci,y_ci],f)
 
 
 # fo = [float(each) for each in input('Enter the frequencies for which there is a significant peak and for which you want to plot the map of variance (separated by commas, no space):').split(',')]

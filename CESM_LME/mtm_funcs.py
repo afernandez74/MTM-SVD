@@ -99,7 +99,7 @@ def mtm_svd_conf(ts2d,nw,kk,dt,niter,sl,w) :
     q = [int(niter*each) for each in sl] # index of 
 
     partvar = []
-
+    print("Begin calculation of Confidence Intervals...")
     # Bootstrapping
     for it in range(niter):
         print('Iter %i'%it)
@@ -107,12 +107,20 @@ def mtm_svd_conf(ts2d,nw,kk,dt,niter,sl,w) :
         [fr, lfv] = mtm_svd_lfv(shr,nw,kk,dt,w)
         partvar.append(lfv)
     partvar = np.sort(partvar, axis = 0)
-    LFVs = partvar
     evalper = []
     for i in q:
         evalper.append(list(partvar[i]))
         
-    return fr, evalper, LFVs
+    conflevel = np.asarray(evalper)
+
+    # calculate C.I. mean values for secular and non-secular bands
+    fr_sec = nw/(ts2d.shape[0]*dt) # secular frequency value
+    fr_sec_ix = np.where(fr < fr_sec)[0][-1] #index in the freq array where the secular frequency is located
+
+    ci_sec = np.nanmean(conflevel[:,0:fr_sec_ix],axis=1) # confidence intervals for secular-and-lower frequencies
+    ci_nsec = np.nanmean(conflevel[:,fr_sec_ix+1:],axis=1) # confidence intervals for secular-and-higher frequencies
+
+    return fr, np.column_stack(ci_sec,ci_nsec)
 
 def envel(ff0, iif, fr, dt, ddf, p, kk, psi, V) :
 
@@ -274,9 +282,6 @@ def annual_means_3d(tas,time):
     # array of years whose data will be kept for annual means (all but first and last year)
     years_keep = all_years[1:-1]
         
-    # Initialize an array to store yearly means
-    yearly_means = np.zeros((len(years_keep), spatial_x, spatial_y))
-    
     # mofify 'tas' so that it only contains the years to keep 
     # by obtaining the indexes where the time dimension of 'tas' is within the second 
     # and second-to-last years
@@ -289,3 +294,27 @@ def annual_means_3d(tas,time):
         
     
     return tas_annual, years_keep
+
+
+# function 5) reshape a 3d gridded climate dataset (temp, pressure, etc...) into a 
+# 2d array where first dimension is time and the second is space
+def reshape_3d_to_2d(mat_3d):
+    """
+    This function reads in a three-dimensional array of a climate variable that is 
+    distributed in latitude, longitude and time
+    It then reshapes the matrix so that time is the first dimension and space (latitude-longitude pairs)
+    is the second dimension
+    """
+    if mat_3d.ndim == 3:
+        mat_2d = mat_3d.reshape((mat_3d.shape[0],mat_3d.shape[1]*mat_3d.shape[2]), order='F')
+    else:
+        mat_2d = mat_3d
+    return mat_2d
+
+    
+    
+    
+    
+    
+    
+    

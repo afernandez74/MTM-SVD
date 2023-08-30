@@ -11,7 +11,7 @@ Created on Thu Aug 17 10:29:13 2023
 import xarray as xr
 from os import listdir
 import pickle as pkl
-from mtm_functions_AF import *
+from mtm_funcs import *
 import numpy as np
 import cftime
 
@@ -27,11 +27,12 @@ class sim:
         self.lon = lon
 
 def nc_to_dic_CESM(path):
+    """
     
-    # reads original CESM LME files (26 in total) and saves a python dictionary that
-    # contains the temperature data from each file as well as latitude, longitude, simulation years
-    # and file name. 
-    
+    Reads original CESM LME files (26 in total) and saves a python dictionary that
+    contains the temperature data from each file as well as latitude, longitude, simulation years
+    and file name. 
+    """
     # annual means are NOT calculated
 
     # data path
@@ -85,10 +86,11 @@ def nc_to_dic_CESM(path):
 
 
 def dic_sim_merge_CESM(dicti, sim_no):
-    # loads the dictionary created with nc_to_dic_CESM and merges the 
-    # monthly values from each of the 13 simulations
-    # Returns a dictionary in which each entry is a CESM LME simulation
-    
+    """
+    load the dictionary created with nc_to_dic_CESM and merges the 
+    monthly values from each of the 13 simulations
+    Return a dictionary in which each entry is a CESM LME simulation
+    """
     keys = list(dicti.keys()) # list of keys from old dictionary
     CESM_merged = {}
     lat = dicti[keys[0]].lat
@@ -111,14 +113,18 @@ def dic_sim_merge_CESM(dicti, sim_no):
         tas = np.concatenate([dicti[key].tas for key in str_nams],axis=0)
         time = np.concatenate([dicti[key].time for key in str_nams])
             
-        print(i)
         CESM_merged[nam] = sim(nam,i,tas,time,lat,lon)
         
     return CESM_merged
         
 ## ____________________________________________________________________________
 
+
 def calc_annual_means_CESM(dicti):
+    """
+    Read in a dictionary containing single simulations and their data per value-key pair
+    And assign annual means of the data to a similar dictionary of the same format
+    """
     keys = list(dicti.keys()) # list of keys from old dictionary
     CESM_merged_annual = {} 
     lat = dicti[keys[0]].lat

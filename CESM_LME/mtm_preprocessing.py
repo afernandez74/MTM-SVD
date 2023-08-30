@@ -4,8 +4,8 @@
 
 # %% import functions and packages
 
-from mtm_functions_AF import *
-from read_in_CESM_LME_nc import *
+from mtm_funcs import *
+from readin_funcs_CESM_LME import *
 import xarray as xr
 from os import listdir
 import os 
@@ -24,7 +24,7 @@ path = "//Volumes//AlejoED//Work//MannSteinman_Proj//Data//CESM_LME_data//2021_C
 files = listdir(path)   
 files.sort()
 
-print('Load data...')
+print('Load in data from NetCDF files...')
 # read in .nc files and collect lat, lon, sim_number, time and temperature fields 
 # put those fields into a dictionary indexed by simulation number and simulation years
 [dic_CESM, sim_no] = nc_to_dic_CESM(path)
@@ -36,6 +36,7 @@ print('Load data...')
     
 # merge dictionary entries that correspond to the same simulations
 # organize simulation data (temperature and time)
+print('Merge files into single simulations...')
 dic_CESM_merged = dic_sim_merge_CESM(dic_CESM, sim_no)
 
 # delete unnecessary dictionaries to free memory
@@ -44,9 +45,20 @@ del dic_CESM
 # %%-----------------
 # 3) Calculate annual means
 # -------------------
+print('Calculate annual means...')
 dic_CESM_merged_annual = calc_annual_means_CESM(dic_CESM_merged)
 del dic_CESM_merged
 
 # %%-----------------
 # 4) Save python dictionary to local directory
 # -------------------
+save_path = "CESM_LME_data_dic"
+timestamp = datetime.now().strftime("%b%d_%Y_%I.%M%p")
+file_name = f'CESM_LME_data_dic_{timestamp}'
+full_path = os.path.join(save_path, file_name)
+
+# save data into local directory
+with open(full_path,'wb') as f:
+    pkl.dump(dic_CESM_merged_annual, f)
+    
+print (f'Pickle file saved to: {full_path}')

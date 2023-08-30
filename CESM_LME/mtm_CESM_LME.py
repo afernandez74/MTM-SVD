@@ -3,15 +3,10 @@
 # for both forced+internal and internal-only series, and produces figures combining
 # all results
 
-# This Python code is structured as follows: 
-# This pre-processing code handles the raw .nc files that are to be analyzed and 
-# a smaller Python dictionary is then saved locally so that it can go into the 
-# MTM-SVD code
-
 # %% import functions and packages
 
-from mtm_functions_AF import *
-from read_in_CESM_LME_nc import *
+from mtm_funcs import *
+from readin_funcs_CESM_LME import *
 import xarray as xr
 from os import listdir
 import os 
@@ -22,170 +17,150 @@ import pickle as pkl
 
 
 # %%-----------------
-# 1) Load the raw data and save it to dictionary
+# 1) Load the dictionary with annualized simulation data
 # -------------------
 
-#path to the climate dataset to be utilized
-path = "//Volumes//AlejoED//Work//MannSteinman_Proj//Data//CESM_LME_data//2021_CESM_LME_ALL_FORCING//2021_CESM_LME_ALL_FORCING//"
-files = listdir(path)   
-files.sort()
+# file path where dictionary was saved in mtm_preprocessing.py script
+file_path = 'CESM_LME_data_dic/'
+# obtain name of file (only works if one file is present only)
+file = listdir(file_path)[0]
+# save dictionary to dictionary variable
+with open(file_path + file, 'rb') as f:
+    CESM_LME_dic = pkl.load(f)
 
-print('Load data...')
-# read in .nc files and collect lat, lon, sim_number, time and temperature fields 
-# put those fields into a dictionary indexed by simulation number and simulation years
-[dic_CESM, sim_no] = nc_to_dic_CESM(path)
+# Key values from the dictionary, which are equivalent to the number of the simulations (001-013)
+sims = list(CESM_LME_dic.keys())
 
-
+del file, file_path
 # %%-----------------
-# 2) Merge entries corresponding to same simulations into single dictinoary entries
-# -------------------
-    
-# merge dictionary entries that correspond to the same simulations
-# organize simulation data (temperature and time)
-dic_CESM_merged = dic_sim_merge_CESM(dic_CESM, sim_no)
-
-# delete unnecessary dictionaries to free memory
-del dic_CESM
-
-# %%-----------------
-# 3) Calculate annual means
-# -------------------
-dic_CESM_merged_annual = calc_annual_means_CESM(dic_CESM_merged)
-del dic_CESM_merged
-# %%
-
-
-
-dsl = xr.open_dataset(path+files[0])
-dt = 1 # yearly data (monthly values averaged below)
-lon = dsl.longitude
-lat = dsl.latitude
-
-for i in range(0, len(files)):
-    print(i)
-    files_nam = path + files[i]
-
-ds = xr.open_mfdataset(files_nam)
-
-files_num = len(files)
-
-# Plot map of the variable
-#xgrid, ygrid = np.meshgrid(lon,lat)
-#plt.pcolor(xgrid, ygrid, var[0,:,:], cmap='jet')
-#cbar=plt.colorbar()
-#plt.show()
-
-# -------------------
-# 2) Compute the LVF
+# 3) Compute the first ensemble member's LFV spectrum and confidence intervals
 # -------------------
 
-print('Apply the MTM-SVD...')
+# assign a reference simulation (CESM LME ensemble member 001) to which other analyses
+# will be compared
+sim_ref = CESM_LME_dic[sims[0]]
 
-# Slepian tapers
-nw = 2; # bandwidth
+# reference temperature data
+tas_ref = sim_ref.tas
+
+# years of data
+years = sim_ref.time
+
+# =============================================================================
+# Values for MTM-SVD analysis
+# =============================================================================
+
+nw = 2; # bandwidth parameter
 kk = 3; # number of orthogonal windows
+dt = 1 # annual data (12 if monthly)
 
-# Reshape the 2d array to a 1d array
-tas = ds.temperature_anomaly.values
-tas_ts = tas.reshape((tas.shape[0],tas.shape[1]*tas.shape[2]), order='F')
+# Weights based on latitude
+[xx,yy] = np.meshgrid(sim_ref.lon,sim_ref.lat)
+w = np.sqrt(np.cos(np.radians(yy)));
 
-#p, n = tas_ts.shape
-years = ds.year.values
+# Analize all data up to 1850
+cutoff_yr = 1850
 
-# calculate annual averages from monthly data
-tas_ts_annual = annual_means(tas,years)
+# =============================================================================
+# LFV calculation
+# =============================================================================
 
-#number of years
-n,p = tas_ts_annual.shape
+# delete data post cutoff year
+ix_post_cutoff = np.where(years>cutoff_yr)[0]
+tas_ref = np.delete(tas_ref,(ix_post_cutoff),axis = 0)
+years = np.delete(years,(ix_post_cutoff))
 
-#create meshgrid from latitude and longitude values
-[x,y] = np.meshgrid(lon.longitude.values,lat.latitude.values)
-#calculate weights matrix based on latitude
-w = np.sqrt(np.cos(np.radians(y)));
-w=w.reshape(1,w.shape[0]*w.shape[1],order='F')
+# reshape data to 2d
+tas_ref = reshape_3d_to_2d(tas_ref)
+w = w.reshape(1,w.shape[0]*w.shape[1],order='F')
 
-# Compute the LFV
-#[freq, lfv] = mtm_svd_lfv(tas_ts_annual,nw,kk,dt)
-[freq, lfv] = mtm_svd_lfv(tas_ts_annual,nw,kk,dt,w)
+# calculate the LFV 
+freq_ref, lfv_ref = mtm_svd_lfv(tas_ref, nw, kk, dt, w)
 
-# Compute the confidence intervals
-niter = 1000    # minimum of 1000 iterations
-sl = [.99,.95,.9,.8,.5]
-[conffreq, conflevel, LFVs] = mtm_svd_conf(tas_ts_annual,nw,kk,dt,niter,sl,w)
-conflevel = np.asarray(conflevel)
+# %%-----------------
+# 4) Compute the confidece intervals for the reference data 
+# -------------------
 
-# calculate C.I. mean values for secular and non-secular bands
-fr_sec = nw/(n*dt)
-fr_sec_ind = np.where(conffreq < fr_sec)[0][-1]
-ci_sec = np.nanmean(conflevel[:,0:fr_sec_ind],axis=1)
-ci_nsec = np.nanmean(conflevel[:,fr_sec_ind+1:],axis=1)
+# =============================================================================
+# Values for Confidence Interval calculation
+# =============================================================================
+niter = 100    # Recommended -> 1000
+sl = [.99,.95,.9,.8,.5] # confidence levels
 
-# Adjust C.I values so they match
-lfv_mean = np.nanmean(lfv[fr_sec_ind:])
-mean_ci = ci_nsec[-1]
-adj_factor = lfv_mean/mean_ci
-adj_ci = np.array([ci_sec*adj_factor,ci_nsec*adj_factor])
+# conflevels -> 1st column secular, 2nd column non secular (only nonsecular matters)
+[conffreq, conflevels] = mtm_svd_conf(tas_ref,nw,kk,dt,niter,sl,w) 
 
-# Plot the spectrum ___________________________________________
-x_ci = np.array([conffreq[0],conffreq[fr_sec_ind],conffreq[-1]])
-fig, ax = plt.subplots()
-ax.plot(freq,lfv)
-plt.xlim([1/100., 1/2.])
-plt.xlabel('Frequency [1/year]') ; plt.ylabel('LFV')
+del conffreq
 
-for i in range(0,len(sl)):
-    y_ci = np.array([adj_ci[0,i],adj_ci[1,i],adj_ci[1,i]])
-    ax.plot(x_ci,y_ci)
+# =============================================================================
+# Rescale Confidence Intervals to mean of reference LFV so 50% confidence interval
+# matches mean value of the spectrum and all other values are scaled accordingly
+# =============================================================================
+
+# Rescaling of confidence intervals 
+lfv_mean = np.nanmean(lfv_ref[fr_sec_ix:]) # mean of lfv spectrum in the nonsecular band 
+mean_ci = ci_nsec[-1] # 50% confidence interval array (non secular)
+adj_factor = lfv_mean/mean_ci # adjustment factor for confidence intervals
+adj_ci = np.array([ci_sec*adj_factor,ci_nsec*adj_factor]) # adjustment for confidence interval values
+
+# %%-----------------
+# 5) Compute the ensemble mean and internal-variability-only data (i.e., forcing series removed)
+# -------------------
+
+# array where all data will be stored for calculation of the ensemble mean
+tas_all = np.zeros((np.shape(tas_ref)[0],np.shape(tas_ref)[1],len(CESM_LME_dic)))
+c=0
+
+# loop that reads in each key,value pair from the dictionary, deletes post-industrial data
+# reshapes it to 2d and then saves the 2d data in a tas_all array which contains all 13
+# 2d arrays for each simulation
+for key,value in CESM_LME_dic.items():
+    tas_i = value.tas #obtain current simulation temperature data
+    tas_i = np.delete(tas_i,(ix_post_cutoff),axis = 0) # delete post-industrial data
+    tas_i = reshape_3d_to_2d(tas_i) # reshape data to 2d
+    tas_all[:,:,c] = tas_i # assign to tas_all array 
+    c=c+1
+    del tas_i
+del c, key, value
+
+tas_ens_mn = np.nanmean(tas_all,axis = 2) # calculate ensemble mean gridded data
+tas_ens_mn_glob = np.nanmean(tas_ens_mn,axis = 1) # calculate ensemble mean timeseries 
+
+# =============================================================================
+# Subtract ensemble mean from each simulation data
+# =============================================================================
+
+# tas_inter --> forcing removed / internal-only data 
+# subtract ensemble mean from each field to obtain the internal-only fields
+tas_inter = tas_all - tas_ens_mn[:,:,np.newaxis]
     
-fig.show
+# %%-----------------
+# 6) Compute the LVF spectra of the internal+forced ensemble members
+# -------------------
 
-fig_name = f'results//LFV_plot//hadcrut4_lfv_ci_{niter}i_{datetime.now().strftime("%b%d,%Y_%I.%M%p")}.pdf'
-os.makedirs(os.path.dirname(fig_name), exist_ok = True)
-plt.savefig(fig_name)
+# Initialize LFV matrix to store all results 
+lfv_all = np.zeros((lfv_ref.shape[0],tas_all.shape[2]))
+for i in range(0,tas_all.shape[2]):
+    tas =  tas_all[:,:,i]    
+    # Compute the LFV    
+    [freq, lfv] = mtm_svd_lfv(tas,nw,kk,dt,w)
+    print(f'Calculating LFV for "all" data of simulation {i+1:03d}')
+    lfv_all[:,i] = lfv
+del freq, lfv, i, tas
+# %%-----------------
+# 7) Compute the LFV spectra of the internal-only ensemble members
+# -------------------
 
-    
-print(datetime.now()-start)
+# Initialize LFV matrix to store all results 
+lfv_inter = np.zeros((lfv_ref.shape[0],tas_inter.shape[2]))
+for i in range(0,tas_inter.shape[2]):
+    tas =  tas_inter[:,:,i]    
+    # Compute the LFV    
+    [freq, lfv] = mtm_svd_lfv(tas,nw,kk,dt,w)
+    print(f'Calculating LFV for "internal-only" data of simulation {i+1:03d}')
+    lfv_inter[:,i] = lfv
+del freq, lfv, i, tas
 
-# save spectrum data to results folder
-file_name = f'results//LFV//hadcrut4_lfv_ci_1000_{datetime.now().strftime("%b%d,%Y_%I.%M%p")}'
-os.makedirs(os.path.dirname(file_name), exist_ok = True)
-with open(file_name,'wb') as f:
-    pkl.dump([freq,lfv,conffreq,conflevel,x_ci,y_ci],f)
-
-
-# fo = [float(each) for each in input('Enter the frequencies for which there is a significant peak and for which you want to plot the map of variance (separated by commas, no space):').split(',')]
-
-# # --------------------------------
-# # 3) Reconstruct spatial patterns
-# # --------------------------------
-
-# # Select frequency(ies) (instead of user-interaction selection)
-# #fo = [0.02, 0.05, 0.15, 0.19, 0.24, 0.276, 0.38] 
-
-# # Calculate the reconstruction
-
-# vexp, totvarexp, iis = mtm_svd_recon(tas_ts_annual,nw,kk,dt,fo)
-
-# # Plot the map for each frequency peak
-
-# for i in range(len(fo)):
-
-#  	RV = np.reshape(vexp[i],x.shape, order='F')
-
-#  	fig, (ax1, ax2) = plt.subplots(2,1,gridspec_kw={'height_ratios':[1,3]},figsize=(5,7))
-
-#  	ax1.plot(freq, lfv)
-#  	ax1.plot(conffreq, LFVs[0,:], '--', c='grey')
-#  	ax1.plot(freq[iis[i]],lfv[iis[i]],'r*',markersize=10)
-#  	ax1.set_xlabel('Frequency [1/years]')
-#  	ax1.set_title('LVF at %i m')
-
-#  	pc = ax2.pcolor(x, y, RV, cmap='jet', vmin=0, vmax=50) 
-#  	cbar = fig.colorbar(pc, ax=ax2, orientation='horizontal', pad=0.1)
-#  	cbar.set_label('Variance')
-#  	ax2.set_title('Variance explained by period %.2f yrs'%(1./fo[i]))
-
-#  	plt.tight_layout()
-#  	#plt.savefig('Figs/peak_analysis_%s_%im_%.2fyrs.jpg'%(model,d,1./fo[i]))
-#  	#plt.show()
-#  	plt.clf()
+# %%-----------------
+# 6) Plot stuff
+# -------------------

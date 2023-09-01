@@ -244,6 +244,7 @@ def annual_means_3d(tas,time):
     
     # array of all years in time array 
     all_years = np.unique([dt.year for dt in time])
+    
     # array of years whose data will be kept for annual means (all but first and last year)
     years_keep = all_years[1:-1]
         

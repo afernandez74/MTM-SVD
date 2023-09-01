@@ -15,6 +15,8 @@ from mtm_funcs import *
 import numpy as np
 import cftime
 
+## ____________________________________________________________________________
+
 
 # create class "sim" which contains information of each simulation file 
 class sim:
@@ -25,6 +27,9 @@ class sim:
         self.time = time
         self.lat = lat
         self.lon = lon
+        
+## ____________________________________________________________________________
+
 
 def nc_to_dic_CESM(path):
     """

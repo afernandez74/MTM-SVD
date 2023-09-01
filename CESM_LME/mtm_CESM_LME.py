@@ -14,7 +14,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime
 import pickle as pkl
-
+import time
 
 # %%-----------------
 # 1) Load the dictionary with annualized simulation data
@@ -31,10 +31,12 @@ with open(file_path + file, 'rb') as f:
 # Key values from the dictionary, which are equivalent to the number of the simulations (001-013)
 sims = list(CESM_LME_dic.keys())
 
-del file, file_path
 # %%-----------------
 # 3) Compute the first ensemble member's LFV spectrum and confidence intervals
 # -------------------
+
+# start a timer
+start_time = time.time()
 
 # assign a reference simulation (CESM LME ensemble member 001) to which other analyses
 # will be compared
@@ -77,20 +79,29 @@ w = w.reshape(1,w.shape[0]*w.shape[1],order='F')
 # calculate the LFV 
 freq_ref, lfv_ref = mtm_svd_lfv(tas_ref, nw, kk, dt, w)
 
+# end timer
+end_time = time.time()
+
+# elapsed time of calculation 
+run_time = end_time - start_time
+print (f'Run time of calculation: {run_time:.3f} seconds')
+
+
 # %%-----------------
 # 4) Compute the confidece intervals for the reference data 
 # -------------------
 
+# start a timer
+start_time = time.time()
+
 # =============================================================================
 # Values for Confidence Interval calculation
 # =============================================================================
-niter = 1000    # Recommended -> 1000
+niter = 10    # Recommended -> 1000
 sl = [.99,.95,.9,.8,.5] # confidence levels
 
 # conflevels -> 1st column secular, 2nd column non secular (only nonsecular matters)
 [conffreq, conflevels] = mtm_svd_conf(tas_ref,nw,kk,dt,niter,sl,w) 
-
-del conffreq
 
 # =============================================================================
 # Rescale Confidence Intervals to mean of reference LFV so 50% confidence interval
@@ -98,14 +109,28 @@ del conffreq
 # =============================================================================
 
 # Rescaling of confidence intervals 
+fr_sec = nw/(tas_ref.shape[0]*dt) # secular frequency value
+fr_sec_ix = np.where(freq_ref < fr_sec)[0][-1] 
+
 lfv_mean = np.nanmean(lfv_ref[fr_sec_ix:]) # mean of lfv spectrum in the nonsecular band 
-mean_ci = ci_nsec[-1] # 50% confidence interval array (non secular)
+mean_ci = conflevels[-1,-1] # 50% confidence interval array (non secular)
+
 adj_factor = lfv_mean/mean_ci # adjustment factor for confidence intervals
-adj_ci = np.array([ci_sec*adj_factor,ci_nsec*adj_factor]) # adjustment for confidence interval values
+adj_ci = conflevels * adj_factor # adjustment for confidence interval values
+
+# end timer
+end_time = time.time()
+
+# elapsed time of calculation 
+run_time = end_time - start_time
+print (f'Run time of confidence interval calculation: {run_time/60:.2f} minutes')
 
 # %%-----------------
 # 5) Compute the ensemble mean and internal-variability-only data (i.e., forcing series removed)
 # -------------------
+
+# start a timer
+start_time = time.time()
 
 # array where all data will be stored for calculation of the ensemble mean
 tas_all = np.zeros((np.shape(tas_ref)[0],np.shape(tas_ref)[1],len(CESM_LME_dic)))
@@ -134,9 +159,20 @@ tas_ens_mn_glob = np.nanmean(tas_ens_mn,axis = 1) # calculate ensemble mean time
 # subtract ensemble mean from each field to obtain the internal-only fields
 tas_inter = tas_all - tas_ens_mn[:,:,np.newaxis]
     
+# end timer
+end_time = time.time()
+
+# elapsed time of calculation 
+run_time = end_time - start_time
+print (f'Run time of LFV spectra for CESM LME _all calculation: {run_time:.0f} seconds')
+
+
 # %%-----------------
 # 6) Compute the LVF spectra of the internal+forced ensemble members
 # -------------------
+
+# start a timer
+start_time = time.time()
 
 # Initialize LFV matrix to store all results 
 lfv_all = np.zeros((lfv_ref.shape[0],tas_all.shape[2]))
@@ -147,9 +183,20 @@ for i in range(0,tas_all.shape[2]):
     print(f'Calculating LFV for "all" data of simulation {i+1:03d}')
     lfv_all[:,i] = lfv
 del freq, lfv, i, tas
+
+# end timer
+end_time = time.time()
+
+# elapsed time of calculation 
+run_time = end_time - start_time
+print (f'Run time of LFV spectra for CESM LME _internal calculation: {run_time:.0f} seconds')
+
 # %%-----------------
 # 7) Compute the LFV spectra of the internal-only ensemble members
 # -------------------
+
+# start a timer
+start_time = time.time()
 
 # Initialize LFV matrix to store all results 
 lfv_inter = np.zeros((lfv_ref.shape[0],tas_inter.shape[2]))
@@ -160,6 +207,13 @@ for i in range(0,tas_inter.shape[2]):
     print(f'Calculating LFV for "internal-only" data of simulation {i+1:03d}')
     lfv_inter[:,i] = lfv
 del freq, lfv, i, tas
+
+# end timer
+end_time = time.time()
+
+# elapsed time of calculation 
+run_time = end_time - start_time
+print (f'Run time of LFV spectra for CESM LME _internal calculation: {run_time:.0f} seconds')
 
 # %%-----------------
 # 6) Save stuff
@@ -180,12 +234,11 @@ CESM_LME_mtm_svd_results = {
     'lfv_inter': lfv_inter
     }
 results_save_path = os.path.expanduser("~/mtm_local/CESM_LME_mtm_svd_results/")
-timestamp = datetime.now().strftime("%b%d_%Y_%I.%M%p")
-file_name = f'CESM_LME_mtm_svd_results{timestamp}'
-full_path = save_path+file_name
+results_timestamp = datetime.now().strftime("%b%d_%Y_%I.%M%p")
+results_file_name = f'CESM_LME_mtm_svd_results{results_timestamp}'
+results_full_path = results_save_path+results_file_name
 
-with open(results_save_path, 'wb') as f:
+with open(results_full_path, 'wb') as f:
     pkl.dump(CESM_LME_mtm_svd_results, f)
-    /Users/afer/mtm_local/CESM_LME_mtm_svd_results
 
 

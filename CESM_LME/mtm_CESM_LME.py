@@ -32,7 +32,7 @@ with open(file_path + file, 'rb') as f:
 sims = list(CESM_LME_dic.keys())
 
 # %%-----------------
-# 3) Compute the first ensemble member's LFV spectrum and confidence intervals
+# 3) Compute the first ensemble member's LFV spectrum 
 # -------------------
 
 # start a timer
@@ -242,3 +242,5 @@ with open(results_full_path, 'wb') as f:
     pkl.dump(CESM_LME_mtm_svd_results, f)
 
 
+# NOTE: lfv spectra are not normalized to reference data. In order for confidence
+#       intervals to be valid, all lfv spectra must be normalized to lfv_ref

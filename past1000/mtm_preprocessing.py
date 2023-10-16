@@ -1,11 +1,11 @@
-# Python code that pre-processes the .nc files from all the CMIP6 past1000 simulations
+# Python code that pre-processes the .nc files from the CESM_LME simulations
 # of the last millennium and locally saves a python dictionary that contains
 # only the data to be analyzed by the mtm-svd script (mtm_CESM_LME.py)
 
 # %% import functions and packages
 
 from mtm_funcs import *
-from readin_funcs_past1000 import *
+from readin_funcs_CESM_LME import *
 import xarray as xr
 from os import listdir
 import os 
@@ -20,15 +20,15 @@ import pickle as pkl
 # -------------------
 
 #path to the climate dataset to be utilized
-path = "//Volumes//AlejoED//Work//MannSteinman_Proj//Data//past1000_data//"
+path = "//Volumes//AlejoED//Work//MannSteinman_Proj//Data//CESM_LME_data//2021_CESM_LME_ALL_FORCING//2021_CESM_LME_ALL_FORCING//"
 files = listdir(path)   
 files.sort()
 
 print('Load in data from NetCDF files...')
-
 # read in .nc files and collect lat, lon, sim_number, time and temperature fields 
 # put those fields into a dictionary indexed by simulation number and simulation years
-[dic_past1000] = nc_to_dic_past1000(path)
+[dic_CESM, sim_no] = nc_to_dic_CESM(path)
+
 
 # %%-----------------
 # 2) Merge entries corresponding to same simulations into single dictinoary entries

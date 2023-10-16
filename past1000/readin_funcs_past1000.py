@@ -9,15 +9,15 @@ Created on Thu Aug 17 10:29:13 2023
 
 
 import xarray as xr
-from os import listdir
 import pickle as pkl
 from mtm_funcs import *
 import numpy as np
 import cftime
+import os 
 
 ## ____________________________________________________________________________
 
-
+#%%
 # create class "sim" which contains information of each simulation file 
 class sim:
     def __init__(self, name, sim_no, tas, time, lat, lon):
@@ -30,7 +30,30 @@ class sim:
         
 ## ____________________________________________________________________________
 
-
+#%%
+def rename_files(path, model_name):
+    """
+    Renames .nc files in a past1000 model simulation so they're easier to handle
+    """
+    
+    #.nc files in the model folder
+    files = os.listdir(path)
+    files.sort()
+    files = [entry for entry in files if not entry.startswith('.')]
+    
+    # year values are in front of ".nc" in all strings
+    id_x = ".nc"
+    #length of years string in file names
+    len_years = 13 
+    
+    for file_name in files:
+        ix = file_name.find(id_x)
+        years = file_name[ix-len_years : ix]
+        new_file_name = "tas_" + model_name + "_" + years + id_x
+        old_file = os.path.join(path.replace("//","/"), file_name)
+        new_file = os.path.join(path.replace("//","/"), new_file_name)
+        os.rename(old_file,new_file)   
+#%%
 def nc_to_dic_past1000(path):
     """
     Reads original CESM LME files (26 in total) and saves a python dictionary that
@@ -39,25 +62,33 @@ def nc_to_dic_past1000(path):
     """
     # annual means are NOT calculated
 
-    # data path
-    files = listdir(path)
+    # each file is a folder contatining all the .nc files for each model 
+    files = os.listdir(path)
     files.sort()
+    files = [entry for entry in files if entry != '.DS_Store']
+
+    # rename files in folders
+    for model_name in files:
+        rename_files(path+model_name, model_name)
+        
+    # how many models
+    num_models = len(files)
     
-            
     # string identifiers for obaining simulation number (out of 13)
     id1 = ".f19_g16."
     id2 = ".cam."
     id3 = ".TS."
     id4 = ".nc"
     
-    # read the name of each file and the sim number
-    files_nam = [''] * len(files)
-    sim_no = [''] * len(files)
-    sim_yrs = [''] * len(files)
+    # initialize variables for the dictionary
+    files_nam = [''] * num_models
+    sim_no = [''] * num_models
+    sim_yrs = [''] * num_models
+    
     dicti = {}
     
     # loop through the files
-    for i in range(0, len(files)):
+    for model in range(0, len(files)):
         # read name of simulation
         files_nam[i] = files[i]
         
@@ -88,7 +119,7 @@ def nc_to_dic_past1000(path):
 
 ## ____________________________________________________________________________
 
-
+#%%
 def dic_sim_merge_CESM(dicti, sim_no):
     """
     load the dictionary created with nc_to_dic_CESM and merges the 
@@ -123,7 +154,7 @@ def dic_sim_merge_CESM(dicti, sim_no):
         
 ## ____________________________________________________________________________
 
-
+#%%
 def calc_annual_means_CESM(dicti):
     """
     Read in a dictionary containing single simulations and their data per value-key pair

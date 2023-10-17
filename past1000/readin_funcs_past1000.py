@@ -31,93 +31,81 @@ class sim:
 ## ____________________________________________________________________________
 
 #%%
-def rename_files(path, model_name):
+def rename_files(path):
     """
     Renames .nc files in a past1000 model simulation so they're easier to handle
     """
     
     #.nc files in the model folder
-    files = os.listdir(path)
-    files.sort()
-    files = [entry for entry in files if not entry.startswith('.')]
+    models = os.listdir(path)
+    models.sort()
+    models = [entry for entry in models if not entry.startswith('.')]
     
     # year values are in front of ".nc" in all strings
     id_x = ".nc"
     #length of years string in file names
     len_years = 13 
     
-    for file_name in files:
-        ix = file_name.find(id_x)
-        years = file_name[ix-len_years : ix]
-        new_file_name = "tas_" + model_name + "_" + years + id_x
-        old_file = os.path.join(path.replace("//","/"), file_name)
-        new_file = os.path.join(path.replace("//","/"), new_file_name)
-        os.rename(old_file,new_file)   
+    for model in models:
+        path_model = os.path.join(path, model + '/')
+        
+        files = os.listdir(path_model)
+        files.sort()
+        files = [entry for entry in files if not entry.startswith('.')]
+        
+        for file_name in files:
+            ix = file_name.find(id_x)
+            years = file_name[ix-len_years : ix]
+            new_file_name = "tas_" + model + "_" + years + id_x
+            old_file = os.path.join(path_model, file_name)
+            new_file = os.path.join(path_model, new_file_name)
+            os.rename(old_file,new_file)
 #%%
-def nc_to_dic_past1000(path):
+def read_in_past1000(path):
     """
-    Reads original CESM LME files (26 in total) and saves a python dictionary that
-    contains the temperature data from each file as well as latitude, longitude, simulation years
-    and file name. 
+    Reads .nc CMIP6 past1000 files and concatenates arrays so that there's 
+    one xarray dataset per model. Also calculates annual means 
     """
-    # annual means are NOT calculated
 
     # each file is a folder contatining all the .nc files for each model 
     files = os.listdir(path)
     files.sort()
-    files = [entry for entry in files if entry != '.DS_Store']
-
-    # rename files in folders
-    for model_name in files:
-        rename_files(path+model_name, model_name)
+    files = [entry for entry in files if not entry.startswith('.')]
         
     # how many models
     num_models = len(files)
     
-    # string identifiers for obaining simulation number (out of 13)
-    id1 = ".f19_g16."
-    id2 = ".cam."
-    id3 = ".TS."
-    id4 = ".nc"
-    
-    # initialize variables for the dictionary
-    files_nam = [''] * num_models
-    sim_no = [''] * num_models
-    sim_yrs = [''] * num_models
-    
+    # dictionary
     dicti = {}
     
-    # loop through the files
-    for model in range(0, len(files)):
-        # read name of simulation
-        files_nam[i] = files[i]
+    for model_name in files:
+        print(model_name+'...')
         
-        # find indexes where the simulation number is in the name
-        ix1 = files_nam[i].find(id1)
-        ix2 = files_nam[i].find(id2)
+        path_model = os.path.join(path,model_name + '/')
+        list_files = [path_model + entry for entry in os.listdir(path_model) if not entry.startswith('.')]
         
-        # simulation number (out of 13)
-        sim_no[i] = files_nam[i][ix1+len(id1):ix2]
+        ds_monthly = xr.open_mfdataset(list_files, combine='nested', concat_dim='time', use_cftime=True)
         
-        # indexes for namiming file with simulation dates
-        ix3 = files_nam[i].find(id3)
-        ix4 = files_nam[i].find(id4)
-        sim_yrs[i] = files_nam[i][ix3+len(id3):ix4]
-        
-        # read data from .nc files 
-        ds = xr.open_mfdataset(path+files_nam[i]) # open .nc file
-        sim_name = "".join(["sim_",sim_no[i],"_",sim_yrs[i]])# get name
-        sim_time = ds.indexes['time'] #get time of sim
-        sim_lat = ds.lat.values #lat 
-        sim_lon = ds.lon.values #lon
-        sim_tas = ds.TS.values #tas 3d
-        print(i)
-        dicti[sim_name] = sim(files_nam[i],sim_no[i],sim_tas,sim_time,sim_lat,sim_lon)
+        # fix error with 'MIROC-ES2L' data where 'time' types are bad for the first year
+        if model_name == 'MIROC-ES2L':
+            ds_monthly = ds_monthly.isel(time=slice(11,-1))
+
+        # calculate annual means of monthly data
+        ds_annual = ds_monthly.groupby('time.year').mean(dim = 'time')
+        dicti[model_name] = ds_annual
             
-    return dicti, sim_no
+            
+    return dicti
 
 
 ## ____________________________________________________________________________
+
+#%%
+def convert_to_proleptic_gregorian(dataset):
+    datetime360day_data = dataset['time']
+    datetime64_data = xr.coding.times.decode_cf_datetime(datetime360day_data,units='')
+    dataset['time'] = datetime64_data
+    return dataset
 
 #%%
 def dic_sim_merge_CESM(dicti, sim_no):

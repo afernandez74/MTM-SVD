@@ -1,12 +1,11 @@
-# Script for MTM_SVD analysis of the CESM Last Millennium Ensemble
-# the script analyzes all of the 13 members of the ensemble, produces LFV spectra 
-# for both forced+internal and internal-only series, and produces figures combining
-# all results
+# Script for MTM_SVD analysis of the CMIP6 past1000 experiments
+# the script analyzes all 4 members of the ensemble, produces LFV spectra 
+# for both forced+internal and internal-only(unforced) series
 
 # %% import functions and packages
 
 from mtm_funcs import *
-from readin_funcs_CESM_LME import *
+from readin_funcs_past1000 import *
 import xarray as xr
 from os import listdir
 import os 
@@ -16,37 +15,58 @@ from datetime import datetime
 import pickle as pkl
 import time
 
-# %%-----------------
-# 1) Load the dictionary with annualized simulation data
-# -------------------
+# %% 1) Load annualized datasets and add them to a common dictionary
 
 # file path where dictionary was saved in mtm_preprocessing.py script
-file_path = os.path.expanduser("~/mtm_local/CESM_LME_data_dic/")
+file_path = os.path.expanduser("~/mtm_local/past1000/datasets/")
+
 # obtain name of file (only works if one file is present only)
-file = listdir(file_path)[0]
-# save dictionary to dictionary variable
-with open(file_path + file, 'rb') as f:
-    CESM_LME_dic = pkl.load(f)
+files = os.listdir(file_path)
+files.sort()
+files = [entry for entry in files if not entry.startswith('.')]
 
-# Key values from the dictionary, which are equivalent to the number of the simulations (001-013)
-sims = list(CESM_LME_dic.keys())
+# standardize time bounds for all analyses (remove first and last years for irregularities)
+year_i = 851
+year_f = 1849
 
-# %%-----------------
-# 3) Compute the first ensemble member's LFV spectrum 
-# -------------------
+# create dictionary with all datasets
+past1000={}
+for file in files:
+    # load dataset 
+    ds_i = xr.open_dataset(file_path+file)
+    
+    # fix name for CESM data due to lack of ".source_id" entry
+    if 'source_id' in ds_i.attrs:
+        model = ds_i.source_id
+    else:
+        model = 'CESM'
+    
+    # save data to dictionary and rename TS in CESM for comatibility
+    # keep only data within desired time bounds
+    if model != 'CESM':
+        past1000[model] = ds_i.sel(year=slice(year_i,year_f))
+    else:
+        ds_i = ds_i.rename({'TS': 'tas'})
+        past1000[model] = ds_i.sel(year=slice(year_i,year_f))
 
-# start a timer
-start_time = time.time()
+# get rid of unneeded variables from CESM data 
+desired_variable_names = ['lat', 'lon', 'year', 'tas']
+past1000['CESM'] = past1000['CESM'][desired_variable_names]
 
-# assign a reference simulation (CESM LME ensemble member 001) to which other analyses
-# will be compared
-sim_ref = CESM_LME_dic[sims[0]]
+# save dictionary with data 
+path_results = os.path.expanduser('~/mtm_local/past1000/tas_dic/')
 
-# reference temperature data
-tas_ref = sim_ref.tas
+results_timestamp = datetime.now().strftime("%b%d_%Y_%I.%M%p")
+results_file_name = f'past1000_dic_{results_timestamp}'
+results_full_path = path_results+results_file_name
 
-# years of data
-years = sim_ref.time
+with open(results_full_path, 'wb') as f:
+    pkl.dump(past1000, f)
+    
+print(f"results dictionary saved to {path_results}")
+
+
+# %% 2) Compute LFV spectra for all simulations individually
 
 # =============================================================================
 # Values for MTM-SVD analysis
@@ -54,142 +74,203 @@ years = sim_ref.time
 
 nw = 2; # bandwidth parameter
 kk = 3; # number of orthogonal windows
-dt = 1 # annual data (12 if monthly)
+dt = 1 # annual data 
 
-# Weights based on latitude
-[xx,yy] = np.meshgrid(sim_ref.lon,sim_ref.lat)
-w = np.sqrt(np.cos(np.radians(yy)));
-
-# Analize all data up to 1850
-cutoff_yr = 1850
+# standardize time bounds for all analyses
+year_i = 851
+year_f = 1849
 
 # =============================================================================
-# LFV calculation
+# Loop for MTM-SVD calculations
 # =============================================================================
 
-# delete data post cutoff year
-ix_post_cutoff = np.where(years>cutoff_yr)[0]
-tas_ref = np.delete(tas_ref,(ix_post_cutoff),axis = 0)
-years = np.delete(years,(ix_post_cutoff))
+# dictionary to save results
+past1000_mtm_svd_results={}
 
-# reshape data to 2d
-tas_ref = reshape_3d_to_2d(tas_ref)
-w = w.reshape(1,w.shape[0]*w.shape[1],order='F')
-
-# calculate the LFV 
-freq_ref, lfv_ref = mtm_svd_lfv(tas_ref, nw, kk, dt, w)
-
-# end timer
-end_time = time.time()
-
-# elapsed time of calculation 
-run_time = end_time - start_time
-print (f'Run time of calculation: {run_time:.3f} seconds')
-
-
-# %%-----------------
-# 4) Compute the confidece intervals for the reference data 
-# -------------------
-
-# start a timer
-start_time = time.time()
-
-# =============================================================================
-# Values for Confidence Interval calculation
-# =============================================================================
-niter = 10    # Recommended -> 1000
-sl = [.99,.95,.9,.8,.5] # confidence levels
-
-# conflevels -> 1st column secular, 2nd column non secular (only nonsecular matters)
-[conffreq, conflevels] = mtm_svd_conf(tas_ref,nw,kk,dt,niter,sl,w) 
-
-# =============================================================================
-# Rescale Confidence Intervals to mean of reference LFV so 50% confidence interval
-# matches mean value of the spectrum and all other values are scaled accordingly
-# =============================================================================
-
-# Rescaling of confidence intervals 
-fr_sec = nw/(tas_ref.shape[0]*dt) # secular frequency value
-fr_sec_ix = np.where(freq_ref < fr_sec)[0][-1] 
-
-lfv_mean = np.nanmean(lfv_ref[fr_sec_ix:]) # mean of lfv spectrum in the nonsecular band 
-mean_ci = conflevels[-1,-1] # 50% confidence interval array (non secular)
-
-adj_factor = lfv_mean/mean_ci # adjustment factor for confidence intervals
-adj_ci = conflevels * adj_factor # adjustment for confidence interval values
-
-# end timer
-end_time = time.time()
-
-# elapsed time of calculation 
-run_time = end_time - start_time
-print (f'Run time of confidence interval calculation: {run_time/60:.2f} minutes')
-
-# %%-----------------
-# 5) Compute the ensemble mean and internal-variability-only data (i.e., forcing series removed)
-# -------------------
-
-# start a timer
-start_time = time.time()
-
-# array where all data will be stored for calculation of the ensemble mean
-tas_all = np.zeros((np.shape(tas_ref)[0],np.shape(tas_ref)[1],len(CESM_LME_dic)))
-c=0
-
-# loop that reads in each key,value pair from the dictionary, deletes post-industrial data
-# reshapes it to 2d and then saves the 2d data in a tas_all array which contains all 13
-# 2d arrays for each simulation
-for key,value in CESM_LME_dic.items():
-    tas_i = value.tas #obtain current simulation temperature data
-    tas_i = np.delete(tas_i,(ix_post_cutoff),axis = 0) # delete post-industrial data
-    tas_i = reshape_3d_to_2d(tas_i) # reshape data to 2d
-    tas_all[:,:,c] = tas_i # assign to tas_all array 
-    c=c+1
-    del tas_i
-del c, key, value
-
-tas_ens_mn = np.nanmean(tas_all,axis = 2) # calculate ensemble mean gridded data
-tas_ens_mn_glob = np.nanmean(tas_ens_mn,axis = 1) # calculate ensemble mean timeseries 
-
-# =============================================================================
-# Subtract ensemble mean from each simulation data
-# =============================================================================
-
-# tas_inter --> forcing removed / internal-only data 
-# subtract ensemble mean from each field to obtain the internal-only fields
-tas_inter = tas_all - tas_ens_mn[:,:,np.newaxis]
+for key,value in past1000.items():
+    ds_i = value
+    model = key
     
-# end timer
-end_time = time.time()
+    # calculate weights based on latitude
+    [xx,yy] = np.meshgrid(ds_i.lon.values,ds_i.lat.values)
+    w = np.sqrt(np.cos(np.radians(yy)));
+    w = w.reshape(1,w.shape[0]*w.shape[1],order='F')
 
-# elapsed time of calculation 
-run_time = end_time - start_time
-print (f'Run time of LFV spectra for CESM LME _all calculation: {run_time:.0f} seconds')
+    # reshape 'tas' matrix to 2d
+    tas = ds_i.sel(year=slice(year_i,year_f))
+    tas_3d = ds_i.tas.to_numpy()
+    tas_2d = reshape_3d_to_2d(tas_3d)
+
+    # calculate the LFV
+    print(f"Calculating LFV spectrum for {model}")
+    freq, lfv = mtm_svd_lfv(tas_2d, nw, kk, dt, w)
+    
+    # Assign results to variables
+    freq_key = f"{model}_freq"
+    freq_value = freq
+    lfv_key = f"{model}_lfv"
+    lfv_value = lfv
+    
+    # save to dictionary
+    past1000_mtm_svd_results[freq_key] =  freq
+    past1000_mtm_svd_results[lfv_key] = lfv
+del key, value    
+# save results to dic  
+
+path_results = os.path.expanduser('~/mtm_local/past1000/mtm_svd_results/')
+
+results_timestamp = datetime.now().strftime("%b%d_%Y_%I.%M%p")
+results_file_name = f'CMIP6_past1000_mtm_svd_results{results_timestamp}'
+results_full_path = path_results+results_file_name
+
+with open(results_full_path, 'wb') as f:
+    pkl.dump(past1000_mtm_svd_results, f)
+    
+print(f"results dictionary saved to {path_results}")
+    
+
+# %% 3) regrid all data to common resolution
+
+# Show grid sizes for all models 
+print("Lat x Lon values for all models:")
+for key, value in past1000.items():
+    lat = len(past1000[key].lat)
+    lon = len(past1000[key].lon)
+    print(f"resolution_{key} = {lat}x{lon}")
+    
+del key, value    
+
+# regrid all entries to CESM grid
+past1000_regrid = {}
+ref = past1000['CESM']
+for key, value in past1000.items():
+    ds_i = value
+    ds_i_regridded = ds_i.interp_like(ref,method='linear')
+    past1000_regrid[key]=ds_i_regridded
+
+print("___")
+print("Lat x Lon values for regridded models:")
+# Show new grid sizes 
+for key, value in past1000_regrid.items():
+    lat = len(past1000_regrid[key].lat)
+    lon = len(past1000_regrid[key].lon)
+    print(f"resolution_{key} = {lat}x{lon}")
+del key, value  
+
+# save dictionary with data 
+path_results = os.path.expanduser('~/mtm_local/past1000/tas_dic_regrid/')
+
+results_timestamp = datetime.now().strftime("%b%d_%Y_%I.%M%p")
+results_file_name = f'past1000_dic_regrid_{results_timestamp}'
+results_full_path = path_results+results_file_name
+
+with open(results_full_path, 'wb') as f:
+    pkl.dump(past1000_regrid, f)
+    
+print(f"results dictionary saved to {path_results}")
 
 
-# %%-----------------
-# 6) Compute the LVF spectra of the internal+forced ensemble members
-# -------------------
+# %% 4) Compute the ensemble mean and unforced data (i.e., forcing series removed)
 
-# start a timer
-start_time = time.time()
+# concatenate datasets to perform calculations
+past1000_concat = xr.concat(list(past1000_regrid.values()), dim='model', coords = 'minimal')
 
-# Initialize LFV matrix to store all results 
-lfv_all = np.zeros((lfv_ref.shape[0],tas_all.shape[2]))
-for i in range(0,tas_all.shape[2]):
-    tas =  tas_all[:,:,i]    
-    # Compute the LFV    
-    [freq, lfv] = mtm_svd_lfv(tas,nw,kk,dt,w)
-    print(f'Calculating LFV for "all" data of simulation {i+1:03d}')
-    lfv_all[:,i] = lfv
-del freq, lfv, i, tas
+# =============================================================================
+# # calculate ensemble mean 
+# =============================================================================
+past1000_ensemb_mean = past1000_concat.mean(dim='model')
 
-# end timer
-end_time = time.time()
+# save dictionary with data 
+path_results = os.path.expanduser('~/mtm_local/past1000/tas_dic_regrid_ensemb_mean/')
 
-# elapsed time of calculation 
-run_time = end_time - start_time
-print (f'Run time of LFV spectra for CESM LME _internal calculation: {run_time:.0f} seconds')
+results_timestamp = datetime.now().strftime("%b%d_%Y_%I.%M%p")
+results_file_name = f'past1000_dic_regrid_ensemb_mean_{results_timestamp}'
+results_full_path = path_results+results_file_name
+
+with open(results_full_path, 'wb') as f:
+    pkl.dump(past1000_ensemb_mean, f)
+
+# =============================================================================
+# calculate unforced data (forced - ensemble mean)
+# =============================================================================
+past1000_regrid_unforced = {}
+#subtract ensemble mean from each individual dataarray
+for key, value in past1000_regrid.items():
+    past1000_regrid_unforced[key] = value - past1000_ensemb_mean
+    
+# save dictionary with data 
+path_results = os.path.expanduser('~/mtm_local/past1000/tas_dic_regrid_unforced/')
+
+results_timestamp = datetime.now().strftime("%b%d_%Y_%I.%M%p")
+results_file_name = f'past1000_dic_regrid_unforced_{results_timestamp}'
+results_full_path = path_results+results_file_name
+
+with open(results_full_path, 'wb') as f:
+    pkl.dump(past1000_regrid_unforced, f)
+
+
+# %% 5) Compute the LVF spectra for 'unforced' datasets
+
+# =============================================================================
+# Values for MTM-SVD analysis
+# =============================================================================
+
+nw = 2; # bandwidth parameter
+kk = 3; # number of orthogonal windows
+dt = 1 # annual data 
+
+# standardize time bounds for all analyses
+year_i = 851
+year_f = 1849
+
+# =============================================================================
+# Loop for MTM-SVD calculations
+# =============================================================================
+
+# dictionary to save results
+past1000_unforced_mtm_svd_results={}
+
+for key, value in past1000_regrid_unforced.items():
+    ds_i = value
+    model = key
+    
+    # calculate weights based on latitude
+    [xx,yy] = np.meshgrid(ds_i.lon.values,ds_i.lat.values)
+    w = np.sqrt(np.cos(np.radians(yy)));
+    w = w.reshape(1,w.shape[0]*w.shape[1],order='F')
+
+    # reshape 'tas' matrix to 2d
+    tas = ds_i.sel(year=slice(year_i,year_f))
+    tas_3d = ds_i.tas.to_numpy()
+    tas_2d = reshape_3d_to_2d(tas_3d)
+
+    # calculate the LFV
+    print(f"Calculating LFV spectrum for {model}")
+    freq, lfv = mtm_svd_lfv(tas_2d, nw, kk, dt, w)
+    
+    # Assign results to variables
+    freq_key = f"{model}_freq"
+    freq_value = freq
+    lfv_key = f"{model}_lfv"
+    lfv_value = lfv
+    
+    # save to dictionary
+    past1000_unforced_mtm_svd_results[freq_key] =  freq
+    past1000_unforced_mtm_svd_results[lfv_key] = lfv
+del key, value    
+# save results to dic  
+
+path_results = os.path.expanduser('~/mtm_local/past1000/mtm_svd_unforced_results/')
+
+results_timestamp = datetime.now().strftime("%b%d_%Y_%I.%M%p")
+results_file_name = f'CMIP6_past1000_mtm_svd_results{results_timestamp}'
+results_full_path = path_results+results_file_name
+
+with open(results_full_path, 'wb') as f:
+    pkl.dump(past1000_unforced_mtm_svd_results, f)
+    
+print(f"results dictionary saved to {path_results}")
+    
 
 # %%-----------------
 # 7) Compute the LFV spectra of the internal-only ensemble members

@@ -15,21 +15,6 @@ import numpy as np
 import cftime
 import os 
 
-## ____________________________________________________________________________
-
-#%%
-# create class "sim" which contains information of each simulation file 
-class sim:
-    def __init__(self, name, sim_no, tas, time, lat, lon):
-        self.name = name
-        self.sim_no = sim_no
-        self.tas = tas
-        self.time = time
-        self.lat = lat
-        self.lon = lon
-        
-## ____________________________________________________________________________
-
 #%%
 def rename_files(path):
     """
@@ -60,6 +45,7 @@ def rename_files(path):
             old_file = os.path.join(path_model, file_name)
             new_file = os.path.join(path_model, new_file_name)
             os.rename(old_file,new_file)
+
 #%%
 def read_in_past1000(path):
     """
@@ -94,70 +80,5 @@ def read_in_past1000(path):
         ds_annual = ds_monthly.groupby('time.year').mean(dim = 'time')
         dicti[model_name] = ds_annual
             
-            
     return dicti
 
-
-## ____________________________________________________________________________
-
-#%%
-def convert_to_proleptic_gregorian(dataset):
-    datetime360day_data = dataset['time']
-    datetime64_data = xr.coding.times.decode_cf_datetime(datetime360day_data,units='')
-    dataset['time'] = datetime64_data
-    return dataset
-
-#%%
-def dic_sim_merge_CESM(dicti, sim_no):
-    """
-    load the dictionary created with nc_to_dic_CESM and merges the 
-    monthly values from each of the 13 simulations
-    Return a dictionary in which each entry is a CESM LME simulation
-    """
-    keys = list(dicti.keys()) # list of keys from old dictionary
-    CESM_merged = {}
-    lat = dicti[keys[0]].lat
-    lon = dicti[keys[0]].lon
-
-    for i in np.unique(sim_no):
-    
-        
-        nam = "".join(["sim",i]) # new key for dictionary w/o dates (eg Sim001)
-        print(nam) 
-        
-        find_str = "".join(['_',i,'_']) # location of the sim number
-        
-        # keys that contain the desiered simulation in the loop (1-13)
-        str_inds = [index for index, s in enumerate(keys) if find_str in s] 
-        
-        # values of the keys that correspond to the ith simulation
-        str_nams = keys[str_inds[0]:str_inds[-1]+1]
-        
-        tas = np.concatenate([dicti[key].tas for key in str_nams],axis=0)
-        time = np.concatenate([dicti[key].time for key in str_nams])
-            
-        CESM_merged[nam] = sim(nam,i,tas,time,lat,lon)
-        
-    return CESM_merged
-        
-## ____________________________________________________________________________
-
-#%%
-def calc_annual_means_CESM(dicti):
-    """
-    Read in a dictionary containing single simulations and their data per value-key pair
-    And assign annual means of the data to a similar dictionary of the same format
-    """
-    keys = list(dicti.keys()) # list of keys from old dictionary
-    CESM_merged_annual = {} 
-    lat = dicti[keys[0]].lat
-    lon = dicti[keys[0]].lon
-    
-    for i_key in keys:
-        tas = dicti[i_key].tas
-        time = dicti[i_key].time
-        tas_annual, time_years= annual_means_3d(tas,time)
-        CESM_merged_annual[i_key] = sim(dicti[i_key].name,dicti[i_key].sim_no,tas_annual,time_years,lat,lon)
-        print (dicti[i_key].name)
-    return CESM_merged_annual
-    

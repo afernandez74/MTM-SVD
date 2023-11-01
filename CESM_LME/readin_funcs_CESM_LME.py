@@ -31,9 +31,8 @@ class sim:
 ## ____________________________________________________________________________
 
 
-def nc_to_dic_CESM(path):
+def nc_to_dic_past1000(path):
     """
-    
     Reads original CESM LME files (26 in total) and saves a python dictionary that
     contains the temperature data from each file as well as latitude, longitude, simulation years
     and file name. 

@@ -16,8 +16,7 @@ from datetime import datetime
 import pickle as pkl
 import time
 
-# %%-----------------
-# 1) Load the dictionary with annualized simulation data
+# %% 1) Load the dictionary with annualized simulation data
 # -------------------
 
 # file path where dictionary was saved in mtm_preprocessing.py script
@@ -31,8 +30,7 @@ with open(file_path + file, 'rb') as f:
 # Key values from the dictionary, which are equivalent to the number of the simulations (001-013)
 sims = list(CESM_LME_dic.keys())
 
-# %%-----------------
-# 3) Compute the first ensemble member's LFV spectrum 
+# %% 2) Compute the first ensemble member's LFV spectrum 
 # -------------------
 
 # start a timer
@@ -87,8 +85,7 @@ run_time = end_time - start_time
 print (f'Run time of calculation: {run_time:.3f} seconds')
 
 
-# %%-----------------
-# 4) Compute the confidece intervals for the reference data 
+# %% 3) Compute the confidece intervals for the reference data 
 # -------------------
 
 # start a timer
@@ -97,7 +94,7 @@ start_time = time.time()
 # =============================================================================
 # Values for Confidence Interval calculation
 # =============================================================================
-niter = 10    # Recommended -> 1000
+niter = 1000    # Recommended -> 1000
 sl = [.99,.95,.9,.8,.5] # confidence levels
 
 # conflevels -> 1st column secular, 2nd column non secular (only nonsecular matters)
@@ -125,8 +122,7 @@ end_time = time.time()
 run_time = end_time - start_time
 print (f'Run time of confidence interval calculation: {run_time/60:.2f} minutes')
 
-# %%-----------------
-# 5) Compute the ensemble mean and internal-variability-only data (i.e., forcing series removed)
+# %% 4) Compute the ensemble mean and internal-variability-only data (i.e., forcing series removed)
 # -------------------
 
 # start a timer
@@ -167,8 +163,7 @@ run_time = end_time - start_time
 print (f'Run time of LFV spectra for CESM LME _all calculation: {run_time:.0f} seconds')
 
 
-# %%-----------------
-# 6) Compute the LVF spectra of the internal+forced ensemble members
+# %% 5) Compute the LVF spectra of the internal+forced ensemble members
 # -------------------
 
 # start a timer
@@ -191,8 +186,7 @@ end_time = time.time()
 run_time = end_time - start_time
 print (f'Run time of LFV spectra for CESM LME _internal calculation: {run_time:.0f} seconds')
 
-# %%-----------------
-# 7) Compute the LFV spectra of the internal-only ensemble members
+# %% 6) Compute the LFV spectra of the internal-only ensemble members
 # -------------------
 
 # start a timer
@@ -215,8 +209,7 @@ end_time = time.time()
 run_time = end_time - start_time
 print (f'Run time of LFV spectra for CESM LME _internal calculation: {run_time:.0f} seconds')
 
-# %%-----------------
-# 6) Save stuff
+# %% 7) Save stuff
 # -------------------
 
 # add results into a dictionary

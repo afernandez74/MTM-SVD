@@ -21,28 +21,31 @@ def mtm_svd_envel(ff0, iif, fr, dt, ddf, n, k, psi, V):
         s[i] = c[i - 1] * sn + s[i - 1] * cs
 
     # d = V[:, 0].conj() * 2.0 # complex conjugate of V doubled
-    d = V[0,:].conj() * 2.0 # complex conjugate of V doubled
-    # multiply the tapers by the sinusoid to get kernels
-    # note we use the complex conjugate
-    g = np.zeros((k,n))
-    for i0 in range(k):
-        g[i0,:] = ex * (psi[i0,:] * c - 1j * psi[i0,:] * s)
-    g = np.array(g).T
+    d = V[0,:]
+    d = np.conj(d)*2    
+    if iif == 1 :
+        d = V[0,:] ; d = np.conj(d)
+
+    g = []
+    for i0 in range(k) :
+        cn = [complex( psi[i0,i]*c[i], -psi[i0,i]*s[i] ) for i in range(len(s))]
+        g.append( ex*cn )
+    g=np.array(g).T
+
     za = np.conj(sum(g))
 
-    # orthogonal decomposition of the tapers
-    [g1,qrsave1] = np.linalg.qr(g, mode = 'complete')
+    [g1,qrsave1] = np.linalg.qr(g)
 
     # Solve for the constant term
-    dum1 = np.linalg.solve(qrsave1.conj().T, np.linalg.solve(qrsave1, d)).T
-    amp0 = sum(np.conj(za)*dum1)
-    dum2 = np.linalg.solve(qrsave1.conj().T, np.linalg.solve(qrsave1, za)).T
+    dum1 = np.linalg.lstsq( np.conj(qrsave1).T, np.linalg.lstsq( np.conj(qrsave1.T), d )[0] )[0].T
+    amp0=sum(np.conj(za)*dum1)
+    dum2 = np.linalg.lstsq( np.conj(qrsave1).T, np.linalg.lstsq( np.conj(qrsave1.T), za )[0] )[0].T
     amp1=sum(np.conj(za)*dum2)
     amp0=amp0/amp1
     sum1=sum(abs(d)**2)
     d=d-za*amp0
     sum2=sum(abs(d)**2)
-    env0= np.linalg.lstsq( np.conj((qrsave1.T)), d.T )[0].T 
+    env0 = np.linalg.lstsq(np.conj(qrsave1.T), d.conj(), rcond=None)[0].conj()
     env = np.matmul(g1, env0.T)
 
     env = env + amp0*np.ones(len(c))

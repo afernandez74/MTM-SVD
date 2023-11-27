@@ -58,7 +58,6 @@ def mtm_svd_bandrecon(ts2d, nw, k, dt, fo, w):
     
     D = vsrep
     
-    
     #closest frequency to user-defined value
     iif = np.argmin(np.abs(fr - fo)) #index 
     iif = (np.abs(fr - fo)).argmin()

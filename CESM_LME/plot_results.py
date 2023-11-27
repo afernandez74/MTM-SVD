@@ -9,7 +9,6 @@ import os
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from matplotlib.ticker import MultipleLocator,FormatStrFormatter,MaxNLocator
 from datetime import datetime
 import pickle as pkl
 

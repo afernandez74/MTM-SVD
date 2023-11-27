@@ -1,6 +1,5 @@
 
 from mtm_funcs import *
-from mtm_recons_dev import mtm_svd_bandrecon as recons
 import xarray as xr
 import os 
 import numpy as np
@@ -133,11 +132,12 @@ p1 = ax.plot(freq,lfv,
 #%% 5) Reconstruct spatial patterns
 
 # Select frequency(ies)
-fo = 0.022
+fo = 0.016
 
 # Calculate the reconstruction
-R, vsr, vexp, totvarexp, iif = recons(tas2d,nw,kk,dt,fo,w)
+R, vsr, vexp, totvarexp, iif = mtm_svd_bandrecon(tas2d,nw,kk,dt,fo,w)
 
+print(f'total variance explained by {fo} ={totvarexp}')
 
 # Plot the map for each frequency peak
 
@@ -161,9 +161,4 @@ plt.show()
 
 
 print('finish')
-
-
-
-
-
 

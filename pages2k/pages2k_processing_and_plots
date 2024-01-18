@@ -1,0 +1,145 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Dec  7 07:41:24 2023
+
+@author: afer
+"""
+
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+import os
+import xarray as xr 
+from scipy.stats import zscore
+import numpy as np
+import pickle
+#%% load pages2k datasets
+path = os.path.expanduser("~/mtm_local/pages2k/datasets/")
+files = os.listdir(path)
+files = [entry for entry in files if not entry.startswith('.')]
+files = sorted(files)
+
+# concatenate them into single dataset
+ds_all = xr.open_mfdataset(f'{path}/*.nc', combine='nested', concat_dim = 'record')
+
+#%% read in data individually per file 
+N = len(files)
+years = ds_all.time.values
+
+proxy_type = ['' for _ in range(N)]
+units = ['' for _ in range(N)]
+site_name = ['' for _ in range(N)]
+variable_name = ['' for _ in range(N)]
+archive_type = ['' for _ in range(N)]
+data_set_name = ['' for _ in range(N)]
+ID = ['' for _ in range(N)]
+direction = ['' for _ in range(N)]
+vals = np.zeros((N,len(years)))
+vals_norm = np.zeros((N,len(years)))
+
+pages2k_dic = {}
+
+c = 0
+for file in files:
+    
+    ds_i = xr.open_dataset(path+file)
+    proxy_type[c] = ds_i.proxy_type
+    units[c] = ds_i.units
+    site_name[c] = ds_i.site_name
+    variable_name[c] = ds_i.variable_name
+    archive_type[c] = ds_i.archive_type
+    data_set_name[c] = ds_i.data_set_name
+    ID[c] = ds_i.pages2kID
+    direction[c] = ds_i.direction
+    
+    if ds_i.direction == 'positive':
+        vals[c,:] = ds_i.proxy_data.values
+        vals_norm[c,:] = zscore(ds_i.proxy_data.values)
+    else:
+        vals[c,:] = ds_i.proxy_data.values * -1.0
+        vals_norm[c,:] = zscore(ds_i.proxy_data.values) * -1.0
+
+
+    c=c+1
+
+proxy_types = list(set(proxy_type))
+archive_types = list(set(archive_type))
+
+pages2k_dic = {'proxy_type': proxy_type,
+               'data_set_name':data_set_name,
+               'units': units,
+               'site_name':site_name,
+               'variable_name':variable_name,
+               'archive_type':archive_type,
+               'ID':ID,
+               'direction':direction,
+               'values':vals,
+               'values_normalized': vals_norm,
+               'years': years
+               
+               }
+
+# add dictionary entries for separated archive type values
+archive_to_analyze = ['speleothem',
+                      'tree',
+                      'marine sediment',
+                      'glacier ice',
+                      'lake sediment']
+
+for archive in archive_to_analyze:
+    name = f'values_normalized_{archive}'
+    archive_c = [c_i for c_i, val in enumerate(archive_type) if val == archive]
+    vals_archive = np.array([(vals_norm[c_i,:]) for c_i in archive_c])
+    pages2k_dic [name] = vals_archive
+
+# save results dic
+path = os.path.expanduser('~/mtm_local/pages2k/past1000_comp_dic/')
+file_name = 'pages2k_past1000_dat_dic'
+
+with open(path+file_name, 'wb') as f:
+    pickle.dump(pages2k_dic, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+#%% timeseries
+
+mpl.rcParams['pdf.fonttype'] = 42
+mpl.rcParams['ps.fonttype'] = 42
+mpl.rcParams['font.family'] = 'Arial'
+mpl.rcParams['font.size'] = 30
+
+
+# plot a single archive type
+for archive in archive_types:
+    fig = plt.figure(figsize=(20,12))
+    ax = fig.add_axes([0.1,0.1,0.5,0.8])
+    ax.tick_params(axis='x',which='major',direction='out',
+               pad=15, labelrotation=45)
+    ax.grid(True,which='major',axis='both')
+
+    archive_c = [c_i for c_i, val in enumerate(archive_type) if val == archive]
+    vals_archive = np.array([(vals_norm[c_i,:]) for c_i in archive_c])
+    mean_val = np.nanmean(vals_archive,axis=0)
+    std_val = np.nanstd(vals_archive, axis = 0 )
+    print(archive)
+    print(f'n={len(archive_c)}')
+
+    # [plt.plot(years,zscore(vals[c_i,:])) for c_i in archive_c]
+    # plot lines
+    p1 = ax.plot(years,mean_val,
+            linestyle = '-',
+            linewidth=2,
+            zorder = 10,
+            color = 'black',
+            label = f'mean {archive}')
+
+    # plot +1sd and -1sd shaded areas
+    p3 = ax.fill_between(years, mean_val+std_val, mean_val-std_val,
+                    alpha=.5, linewidth=0.1, zorder = 2, color = 'lightgray',
+                    label = '\u00B1 \u03C3')
+    plt.title(f'{archive}_N={len(archive_c)}')
+    plt.xlabel('Year AD')
+    plt.ylabel('Z-score proxy')
+    plt.legend()
+    save_name = os.path.expanduser(f"~/mtm_local/pages2k/figures/{archive}_fig")
+    plt.savefig(save_name, dpi=300, format='svg')
+    plt.show()
+

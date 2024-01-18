@@ -191,6 +191,7 @@ def mtm_svd_bandrecon(ts2d, nw, k, dt, fo, w):
 
 
 
+
 # Function 2) Calculate the confidence interval of the LFV calculations
 
 def mtm_svd_conf(ts2d,nw,kk,dt,niter,sl,w) :
@@ -222,51 +223,6 @@ def mtm_svd_conf(ts2d,nw,kk,dt,niter,sl,w) :
     ci = np.column_stack((ci_sec,ci_nsec))
     return fr, ci
 
-# function 4) calculate annual means from monthly data and reshape 3d data to 2d
-
-# years is the 'year' value of the date field from the .nc file. If it's monthly 
-# simulations, the 'years' array will have 12 entries of with the same value
-def annual_means(tas,years):
-    # obtain array of years values
-    years_unique = np.unique(years)
-    
-    # reshape tas matrix to 2d matrix (time x space)
-    tas_ts = tas.reshape((tas.shape[0],tas.shape[1]*tas.shape[2]), order='F')
-    
-    # calculate annual averages from monthly data
-    tas_ts_annual = np.empty((years[-1]-years[0]+1,tas_ts.shape[1]))
-    j=0
-    for i in years_unique:     
-        temp = np.nanmean(tas_ts[years==i,:], axis = 0)
- #           print([i*12, (i*12)+12])
-        tas_ts_annual[j,:] = temp
-        j=j+1
-    return tas_ts_annual
-
-# Function 5) calculate annual means for monthly data and KEEP gridded data format (3d)
-# always gets rid of first and last year of data to account for incompleteness
-def annual_means_3d(tas,time):
-    
-    time_steps, spatial_x, spatial_y = tas.shape
-    
-    # array of all years in time array 
-    all_years = np.unique([dt.year for dt in time])
-    # array of years whose data will be kept for annual means (all but first and last year)
-    years_keep = all_years[1:-1]
-        
-    # mofify 'tas' so that it only contains the years to keep 
-    # by obtaining the indexes where the time dimension of 'tas' is within the second 
-    # and second-to-last years
-    ix = np.where((np.array([dt.year for dt in time]) >= years_keep[0]) & (np.array([dt.year for dt in time]) <= years_keep[-1]))
-    tas = tas[ix]
-    
-    # Calculate annual means
-    tas_reshaped = tas.reshape(-1,12,spatial_x,spatial_y)
-    tas_annual = np.mean(tas_reshaped, axis=1)
-        
-    
-    return tas_annual, years_keep
-
 
 # function 5) reshape a 3d gridded climate dataset (temp, pressure, etc...) into a 
 # 2d array where first dimension is time and the second is space
@@ -284,7 +240,14 @@ def reshape_3d_to_2d(mat_3d):
     return mat_2d
 
     
-    
+# Butterworth low-pass filter
+def butter_lowpass(data, cutoff_frequency, sampling_frequency, order=4):
+    nyquist = 0.5 * sampling_frequency
+    normal_cutoff = cutoff_frequency / nyquist
+    b, a = signal.butter(order, normal_cutoff, btype='low', analog=False)
+    y = signal.filtfilt(b, a, data)
+    return y
+
     
     
     

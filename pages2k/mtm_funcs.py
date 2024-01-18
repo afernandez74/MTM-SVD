@@ -222,7 +222,7 @@ def mtm_svd_bandrecon(ts2d, nw, k, dt, fo, w):
 
     return R, vsr, vexp, totvarexp, iif
 
- 
+
 # function 4) calculate annual means from monthly data and reshape 3d data to 2d
 
 # years is the 'year' value of the date field from the .nc file. If it's monthly 

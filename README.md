@@ -1,5 +1,5 @@
 # MTM-SVD
-Repository to house all things related to my mtm-svd analyses of climate data
+Repository to house all things related to mtm-svd analysis of climate data
 
 # Contents
 - mtm-svd functions (lfv, conf intervals, reconstruction and envel)

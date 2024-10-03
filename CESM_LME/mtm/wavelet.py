@@ -6,7 +6,6 @@ Created on Fri Apr 12 09:47:17 2024
 @author: afer
 """
 
-import waipy
 import pyleoclim as pyleo
 import numpy as np
 import xarray as xr
@@ -146,9 +145,9 @@ year_f = 1849
 weights = np.cos(np.deg2rad(CESM_LME['ALL_FORCING'].lat))
 weights.name = "weights"
 
-NA = False
+NA = True
 case = 'ALL_FORCING'
-unforced = True
+unforced = False
 ensemble_mean = True
 run = 0
 
@@ -158,7 +157,7 @@ if NA:
     data = data.where(NA_mask == 1)
 
 else:
-    data = data.sel(lat = slice(-60,60))
+    data = data.sel(lat = slice(-90,90))
 
 data = data.sel(year = slice(year_i,year_f)).TS
 
@@ -175,13 +174,16 @@ data_ser = pyleo.Series(
         value_name="T",
         value_unit="K")
 
-wave = data_ser.wavelet().signif_test(number=100,qs = [0.5,0.9,0.95])
+wave = data_ser.wavelet(
+    settings = {'pad':True},
+    freq_kwargs={'fmin':1/200,'fmax':1/5,'nf':100}).signif_test(
+        method = 'CN',number=1000,qs = [0.5,0.9])
 
-yticks=[100,80,70,60,50,40,30,20]
+yticks=[100,90,80,70,60,50,40,30,20]
 
-contourf_style = {'cmap': 'jet', 
+contourf_style = {'cmap': 'turbo', 
                   'origin': 'lower', 
-                  'levels': 100}
+                  'levels': 15}
 title = f'scalogram {case}'
 title = title + ' Ensemble Mean' if ensemble_mean else title + f'run {run}'
 title = title + ' NA' if NA else title
@@ -191,9 +193,10 @@ fig = plt.figure(figsize=(30,12))
 ax = fig.add_axes([0.1,0.1,0.5,0.8])
 
 
-fig = wave.plot(ylim=[100,20],
+fig = wave.plot(
+          ylim=[100,10],
           title = title,
-          xlim = [900,1800],
+          # xlim = [900,1800],
           contourf_style=contourf_style,
           signif_thresh = 0.90,
           signif_clr='black',

@@ -237,7 +237,7 @@ else:
 
 # pick which periods to showcase (years)
 
-case = 'VOLC'
+case = 'ALL'
 
 whole_spec = False
 xticks = [100,80,70,60,50,40,30,20]
@@ -654,7 +654,7 @@ else:
 #%% Plot single member lines instead of shading 
 # pick which periods to showcase (years)
 case = 'ALL'
-unforced = True
+unforced = False
 
 whole_spec = False
 
@@ -700,7 +700,7 @@ for run, run_ds in ds.groupby('run'):
 
 # plot confidence intervals
 [plt.axhline(y=i, color='black', linestyle='--', alpha=.8, linewidth = 1.5) for i in ci[:,1]]
-plt.axvline(x = 1/34)
+# plt.axvline(x = 1/34)
 plt.xlabel('Period (yr)')
 plt.ylabel("LFV")
 plt.title(f'MTM-SVD CESM LME {case} single lines')

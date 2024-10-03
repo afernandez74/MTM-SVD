@@ -251,8 +251,18 @@ def butter_lowpass(data, cutoff_frequency, sampling_frequency, order=4):
     y = signal.filtfilt(b, a, data)
     return y
 
-    
-    
-    
-    
+def butter_highpass(data, cutoff_frequency, sampling_frequency, order=4):
+    nyquist = 0.5 * sampling_frequency
+    normal_cutoff = cutoff_frequency / nyquist
+    b, a = signal.butter(order, normal_cutoff, btype='high', analog=False)
+    y = signal.filtfilt(b, a, data)
+    return y
+
+def butter_bandpass(data, low_cutoff_frequency, high_cutoff_frequency, sampling_frequency, order=4):
+    nyquist = 0.5 * sampling_frequency
+    low_normal_cutoff = low_cutoff_frequency / nyquist
+    high_normal_cutoff = high_cutoff_frequency / nyquist
+    b, a = signal.butter(order, [low_normal_cutoff, high_normal_cutoff], btype='band', analog=False)
+    y = signal.filtfilt(b, a, data)
+    return y
     

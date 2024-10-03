@@ -207,7 +207,7 @@ del BIGGER_SIZE, MEDIUM_SIZE, SMALL_SIZE
 
 #%% Cycle through all runs of a case and plot Evo LFV spectra
 
-case = 'VOLC'
+case = 'ALL'
 NA = True
 whole_spec = False
 
@@ -333,8 +333,8 @@ for run_i in range(len(lfv_by_case[case].run)):
         
 
 #%% Plot mean of a case
-case = 'VOLC'
-NA = False
+case = 'ALL'
+NA = True
 whole_spec = False
 
 dat = lfv_by_case_NA if NA else lfv_by_case
@@ -352,7 +352,7 @@ ax1.minorticks_off()
 ax2.minorticks_off()
 
 # pick which periods to showcase (years)
-yticks = [100,80,70,60,50,40,30,20]
+yticks = [100,90,80,70,60,50,40,30,20]
 if whole_spec:
     yticks = [100,80,70,60,50,40,30,20,10,5,3]
 
@@ -376,6 +376,7 @@ ci50 = ci50_GLOB if not NA else ci50_NA
 ci90 = ci90_GLOB if not NA else ci90_NA
 ci99 = ci99_GLOB if not NA else ci99_NA
 
+# ax1.axhline(y=1/95, color='black', linestyle='-')
 
 dat[case].mean(dim = 'run').plot.contourf(
     ax = ax1,
@@ -386,8 +387,8 @@ dat[case].mean(dim = 'run').plot.contourf(
     # robust = True,
     vmin = 0.4,
     vmax = 0.8 if NA else 0.8,
-    cmap = 'jet',
-    levels = 50
+    cmap = 'turbo',
+    levels = 15
     )
 
 dat[case].mean(dim = 'run').plot.contour(
@@ -411,8 +412,8 @@ dat_unf[case].mean(dim = 'run').plot.contourf(
     # robust = True,
     vmin = 0.4,
     vmax = 0.8 if NA else 0.8,
-    cmap = 'jet',
-    levels = 50
+    cmap = 'turbo',
+    levels = 15
     )
 dat_unf[case].mean(dim = 'run').plot.contour(
     ax = ax2,
@@ -430,7 +431,6 @@ ax1.set_title(title1)
 
 title2 = f'{case} mean unforced NA' if NA else f'{case} mean unforced'
 ax2.set_title(title2)
-
 save_path = os.path.expanduser('~/mtm_local/CESM_LME/figs/lfv_evo/GLOB/')
 if NA:
     save_path = os.path.expanduser('~/mtm_local/CESM_LME/figs/lfv_evo/NA/')
@@ -451,7 +451,7 @@ else:
 #%% Plot ensemble mean spectra
 
 case = 'ALL'
-NA = False
+NA = True
 whole_spec = False
 
 dat =  lfv_by_case_EM

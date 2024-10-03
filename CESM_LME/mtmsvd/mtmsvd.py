@@ -53,41 +53,41 @@ nw = 2; # bandwidth parameter
 kk = 3; # number of orthogonal windows
 dt = 1 # annual data (12 if monthly)
 
-NA = False
-chunk = True
-unforced = True
+NA = True # Analyze North Atlantic surface temperature only 
 
-#chunk years
-year_i = 1600
-year_f = 1849
+unforced = True # Analyze the unforced data
 
-# =============================================================================
-# loop through all cases
-# =============================================================================
+# If chunk == True, input date range for analysis in years
+chunk = True # Analyze a specific timperiod of the data
+year_i = 1150
+year_f = 1400
 
 LFV = {}
 
 dat = CESM_LME_unforced if unforced else CESM_LME
 
 for case_i, ds_i in dat.items():
-    
+    ds_i = ds_i.TS
+
+    ds_i = ds_i.where(NA_mask==1) if NA else ds_i
+
     print('case='+case_i)
-    ds_i = ds_i.sel(lat = slice(-60,60))
-    ds_i = ds_i.where(NA_mask == 1) if NA else ds_i
-    
+
     # Weights based on latitude
     [xx,yy] = np.meshgrid(ds_i.lon,ds_i.lat)
     w = np.sqrt(np.cos(np.radians(yy)));
     w = w.reshape(1,w.shape[0]*w.shape[1],order='F')
+
+
 
     # temp data
     if chunk:
         tas = ds_i.sel(year=slice(year_i,year_f))
     else:
         tas = ds_i.isel(year=slice(1,-1))
-    tas_np = tas.TS.to_numpy()
-    
-    #cntl
+    tas_np = tas.to_numpy()
+
+    # control sim:
     if not unforced and tas_np.ndim == 3:
 
         tas_2d = reshape_3d_to_2d(tas_np)
@@ -103,8 +103,7 @@ for case_i, ds_i in dat.items():
 
         LFV[f'{case_i}_lfv'] = spectrum
 
-
-    #other cases
+    # other cases
     else:
 
         #loop through "run" dimension, which is assumed to be the shortest one
@@ -120,7 +119,7 @@ for case_i, ds_i in dat.items():
                 name = f'{case_i}_{(i+1):03d}_lfv'
                 )
 
-            LFV[f'{case_i}_00{i+1}_lfv'] = spectrum
+            LFV[f'{case_i}_{i:03}_lfv'] = spectrum
 
 # merge all dataArrays into a single dataset
 lfv = xr.Dataset(LFV)
@@ -130,12 +129,24 @@ name = 'lfv'
 name = name + f'_{year_i:04}-{year_f:04}'if chunk else name
 name = name + '_NA' if NA else name
 name = name + '_unforc' if unforced else name
+name = name + '_AF_ONLY' if AF_ONLY else name
 
 #save results dataset as .nc file
 path = os.path.expanduser('~/mtm_local/CESM_LME/mtm_svd_results/lfv/')
 lfv.to_netcdf(path + name +'.nc')
 
+# =============================================================================
+# quick plot of spectra
+# =============================================================================
+fig, ax = plt.subplots(figsize=(12, 6))
+ax.set_xscale('log')
+for var_name, da in lfv.data_vars.items():
+    da.plot(xlim = [0.01,0.033333],ax =ax)
+ax.set_title(f'AF_ONLY_{year_i}-{year_f}\ {name}')
+
+
 # %% Confidence intervals 
+
 # =============================================================================
 # Values for Monte Carlo analysis
 # =============================================================================
@@ -243,8 +254,8 @@ NA = False
 chunk = False
 
 #chunk years
-year_i = 1600
-year_f = 1849
+year_i = 851
+year_f = 1150
 
 # =============================================================================
 # loop through all cases

@@ -109,7 +109,7 @@ finalMask = finalMask.where(finalMask > 0)
 
 NA_mask = finalMask
 
-del finalMask, NA, polygon,shpfile, temp_mask, xx, yy
+del finalMask, NA, shpfile, temp_mask, xx, yy
 
 #%% Gloabal SST anomaly (60S - 60N)
 

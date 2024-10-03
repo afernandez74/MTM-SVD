@@ -6,7 +6,6 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import pandas as pd
 import cartopy.crs as ccrs
-import geopandas as gpd
 from descartes import PolygonPatch
 from shapely.geometry import Point, Polygon
 from North_Atlantic_mask_funcs import load_shape_file, select_shape, serial_mask

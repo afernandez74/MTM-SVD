@@ -103,8 +103,8 @@ nw = 2; # bandwidth parameter
 kk = 3; # number of orthogonal windows
 dt = 1 # annual data 
 
-year_i = 1300
-year_f = 1800
+year_i = 1150
+year_f = 1400
 
 # Select frequency(ies)
 
@@ -112,12 +112,12 @@ year_f = 1800
 # fo = 0.136963# peak for run=4 of VOLC (ENSO band)
 # fo = 0.0170 #peak for ALL_FORCING ensemble (~58yr)
 # fo = 0.023 #~43 yr
-fo = 1/27
+fo = 1/23
 
-case = 'CNTL'
-unforced =False
-run = 6
-NA = True
+case = 'ALL'
+unforced = False
+run = 1
+NA = False
 
 save_fig = input("Save figs? (y/n):").lower()
 
@@ -130,7 +130,7 @@ if case != 'CNTL':
 else:
     dat = CESM_LME[case]
 
-dat = dat.sel(lat = slice(-60,60))
+dat = dat.sel(lat = slice(-90,90))
 dat = dat.where(NA_mask == 1) if NA else dat
 
 
@@ -176,7 +176,7 @@ print(f'total variance explained by {fo} = {totvarexp}')
 fig = plt.figure(figsize=(15,15))
 
 ax1 = plt.subplot(211)
-xticks = [100,80,70,60,50,40,30,20]
+xticks = [100,80,70,60,50,40,30,20,10]
 
 # figure drawing
 
@@ -219,10 +219,10 @@ ax2 = plt.subplot(212,projection = ccrs.Robinson(central_longitude = -90), facec
 p = RV.plot.contourf(ax = ax2,
             add_colorbar = False,
             transform = ccrs.PlateCarree(),
-            # vmin = 0, 
+            vmin = 0, 
             # vmax = 18,
             robust = True,
-            levels = 12,
+            levels = 10,
             cmap = 'hot_r')
 ax2.set_title(f'Variance explained by period {1./fo:.2f} yrs = {totvarexp:.2f}%',pad = 20,)
 
@@ -307,17 +307,17 @@ nw = 2; # bandwidth parameter
 kk = 3; # number of orthogonal windows
 dt = 1 # annual data 
 
-year_i = 1600
-year_f = 1850
+year_i = 1150
+year_f = 1350
 
 # Select frequency(ies)
 
 # fo = 0.0151367 #peak for run=4 of VOLC (~66yr)
 # fo = 0.15844 # peak for run=4 of VOLC (ENSO band)
 # fo = 0.0170 #peak for ALL_FORCING ensemble (~58yr)
-fo = 1/35
+fo = 1/24
 
-case = 'VOLC'
+case = 'ALL_FORCING'
 unforced = False
 n_runs = len(CESM_LME[case].run)
 NA = False
@@ -463,17 +463,17 @@ kk = 3; # number of orthogonal windows
 dt = 1 # annual data 
 
 year_i = 1150
-year_f = 1350
+year_f = 1400
 
 # Select frequency(ies)
 
 # fo = 0.0151367 #peak for run=4 of VOLC (~66yr)
 # fo = 0.25 # peak for run=4 of VOLC (ENSO band)
-fo =1/60
+fo =1/95
 
 case = 'ALL_FORCING'
-unforced = True
-NA = False
+unforced = False
+NA = True
 
 spectra = {}
 RV = []
@@ -535,10 +535,11 @@ p = RV_mean.plot.contourf(cmap = 'hot_r',
                  add_colorbar = False,
                  transform = ccrs.PlateCarree(),
                  levels = 10,
-                 # vmin = 0, 
-                 # vmax = 14.0,
-                    vmax = 8,
-                  robust = True,
+                 vmin = 0, 
+                 # vmax = 6.0,
+                 # vmax = 8,
+                 vmax = 10,
+                 robust = True,
                  )
 
 ax = p.axes.coastlines()
@@ -578,6 +579,49 @@ if save_fig == 'y':
 
 else:
     plt.show()
+
+# # =============================================================================
+# # spectrum
+# # =============================================================================
+# fig = plt.figure(figsize=(15,15))
+
+# ax1 = plt.subplot(211)
+# xticks = [100,80,60,40,30,20]
+
+
+# # figure drawing
+
+# ax1.set_xscale('log')
+# # set x ticks and labels
+
+# xticks2 = [1/x for x in xticks]
+# ax1.set_xticks(xticks2)
+# xticks2_labels = [str(x) for x in xticks]
+# ax1.set_xticklabels(xticks2_labels)
+# ax1.grid(True,which='major',axis='both')
+# plt.xlim((xticks2[0],xticks2[-1]))
+# # plt.ylim(0.4,0.8)
+# ax1.tick_params(axis='x',which='major',direction='out',
+#                pad=15, labelrotation=45)
+# ax1.minorticks_off()
+
+# for specs in spectra.values():
+    
+#     p = specs.plot(
+#         linestyle = '-',
+#         linewidth=2,
+#         zorder = 10,
+#         # color = 'blue'
+#         )
+
+# [ax1.axhline(y=i, color='black', linestyle='--', alpha=.8, zorder = 1) for i in ci[:,1]]
+# ax1.legend()
+# ax1.set_title(f'LFV spectrum {case}run{run_i}\n{year_i}-{year_f}')
+# if unforced:
+#     ax1.set_title(f'LFV spectrum {case}run{run_i} unforced\n{year_i}-{year_f}')
+    
+# ax1.set_xlabel('LFV')
+# ax1.set_ylabel('Period (yr)')
 
 
 #%% find hightest mean var explained point in map
@@ -669,15 +713,14 @@ nw = 2; # bandwidth parameter
 kk = 3; # number of orthogonal windows
 dt = 1 # annual data 
 
-year_i = 1350
-year_f = 1600
+year_i = 850
+year_f = 1850
 
 # Select frequency(ies)
 
-fo = 1/30
+fo = 1/41
 case = 'ALL_FORCING'
-NA = True
-
+NA = False
 
 # Calculate the reconstruction
 
@@ -763,16 +806,17 @@ ax1.set_ylabel('Period (yr)')
 # map 
 # =============================================================================
 
+
 ax2 = plt.subplot(212,projection = ccrs.Robinson(central_longitude = -90), facecolor= 'grey')
 
 p = RV.plot.contourf(ax = ax2,
             add_colorbar = False,
             transform = ccrs.PlateCarree(),
-            # vmin = 0, 
+            vmin = 0, 
             # vmax = 2,
             robust = True,
-            levels = 40,
-            cmap = 'turbo')
+            levels = 10,
+            cmap = 'hot_r')
 ax2.set_title(f'Variance explained by period {1./fo:.2f} yrs = {totvarexp:.2f}%',pad = 20,)
 
 # add separate colorbar

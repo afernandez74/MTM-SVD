@@ -60,7 +60,7 @@ nw = 2; # bandwidth parameter
 kk = 3; # number of orthogonal windows
 dt = 1 # annual data 
 
-fo = 1/51
+fo = 1/3.65
 
 # Calculate the reconstruction
 # Weights based on latitude
@@ -144,10 +144,12 @@ ax2 = plt.subplot(212,projection = ccrs.Robinson(central_longitude = -90), facec
 p = RV.plot.contourf(ax = ax2,
             add_colorbar = False,
             transform = ccrs.PlateCarree(),
-            # vmin = 0, vmax = 2,
+            vmin = 0, 
+            # vmax = 18,
             robust = True,
-            levels = 40,
-            cmap = 'jet')
+            levels = 10,
+            cmap = 'hot_r')
+
 
 ax2.set_title(f'Variance explained by period {1./fo:.2f} yrs = {totvarexp:.2f}%',pad = 20,)
 

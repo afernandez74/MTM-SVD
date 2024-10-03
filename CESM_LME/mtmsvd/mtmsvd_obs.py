@@ -61,7 +61,7 @@ fig = plt.figure(figsize=[15,15])
 ax = plt.axes(projection=ccrs.Robinson(central_longitude = -90),
                  facecolor='grey')
 
-RV = ds.polyfit('year',deg = 0).polyfit_coefficients.sel(degree=0)
+RV = ds.polyfit('year',deg = 1).polyfit_coefficients.sel(degree=1)
 
 p = RV.plot.contourf(cmap = 'turbo',
                  add_colorbar = False,
@@ -77,7 +77,8 @@ gl = p.axes.gridlines(crs=ccrs.PlateCarree(), draw_labels=True,
 
 cb = plt.colorbar(p, orientation='horizontal', 
                   # ticks=[0,0.5,1,1.5,2],
-                  pad=0.05,shrink=0.8,label = 'Temperature anomaly')
+                  # pad=0.05,shrink=0.8,label = 'Temperature anomaly'
+                  )
 
 plt.title('Rate of warming observed')
 

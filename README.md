@@ -17,21 +17,21 @@ Repository to house all things related to mtm-svd analysis of climate data
 
 ## Notes on conventional MTM analysis and wavelet spectra
 
-Single timeseries calculated and analyzed thanks to Pyleoclim package *
+Single timeseries calculated and analyzed thanks to Pyleoclim package **
 
 ## Dependencies
 
 To use Pyleoclim, make sure to have a Python version >3.11. 
 
-Code based on Mathilde Jutras' python implementation of Correa-Ramirez and Hormazabal 2012 ** MATLAB code.
+Code based on Mathilde Jutras' python implementation of Correa-Ramirez and Hormazabal 2012 *** MATLAB code.
 https://github.com/mathildejutras/mtm-svd-python
 
-Method developed by Mann and Park (1994) ***
+Method developed by Mann and Park (1994) ****
 
 
-  *  Khider, Deborah, Emile-Geay, Julien, Zhu, Feng, James, Alexander, Landers, Jordan, Kwan, Myron, & Athreya, Pratheek. (2022). Pyleoclim: A Python package for the analysis and visualization of paleoclimate data (v0.9.1). Zenodo. https://doi.org/10.5281/zenodo.7523617
+  **  Khider, Deborah, Emile-Geay, Julien, Zhu, Feng, James, Alexander, Landers, Jordan, Kwan, Myron, & Athreya, Pratheek. (2022). Pyleoclim: A Python package for the analysis and visualization of paleoclimate data (v0.9.1). Zenodo. https://doi.org/10.5281/zenodo.7523617
 
-  ** Correa-Ramirez, M., & Hormazabal, S. (2012). MultiTaper Method-Singular Value Decomposition (MTM-SVD): spatial-frequency variability of the sea level in the southeastern Pacific. Latin American Journal of Aquatic Research, 40(4), 1039-1060.
+  *** Correa-Ramirez, M., & Hormazabal, S. (2012). MultiTaper Method-Singular Value Decomposition (MTM-SVD): spatial-frequency variability of the sea level in the southeastern Pacific. Latin American Journal of Aquatic Research, 40(4), 1039-1060.
 
 
-  *** Mann, M. E., & Park, J. (1994). Global‐scale modes of surface temperature variability on interannual to century timescales. Journal of Geophysical Research: Atmospheres, 99(D12), 25819-25833.
+  **** Mann, M. E., & Park, J. (1994). Global‐scale modes of surface temperature variability on interannual to century timescales. Journal of Geophysical Research: Atmospheres, 99(D12), 25819-25833.

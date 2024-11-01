@@ -8,6 +8,11 @@ Repository to house all things related to mtm-svd analysis of climate data
 
 ## Notes on MTM-SVD analysis 
 
+Code based on Mathilde Jutras' python implementation of Correa-Ramirez and Hormazabal 2012 *** MATLAB code.
+https://github.com/mathildejutras/mtm-svd-python
+
+Method developed by Mann and Park (1994) ****
+
 1. Download CESM LME data from https://www.cesm.ucar.edu/community-projects/lme
 2. Run mtmsvd_preprocessing.py routing the path to your dowloaded data
 3. mtmsvd.py calculates the LFV spectra for each simulation of each case in the ensemble. It also calculates the confidence intervals. Route the path to which you wish to save the results
@@ -23,10 +28,9 @@ Single timeseries calculated and analyzed thanks to Pyleoclim package **
 
 To use Pyleoclim, make sure to have a Python version >3.11. 
 
-Code based on Mathilde Jutras' python implementation of Correa-Ramirez and Hormazabal 2012 *** MATLAB code.
-https://github.com/mathildejutras/mtm-svd-python
+## License
 
-Method developed by Mann and Park (1994) ****
+The project is licensed under the GNU Public License. Please refer to the file call license. If you use the code in publications, please credit the work using the citation file.
 
 ## References
 

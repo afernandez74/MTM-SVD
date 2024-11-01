@@ -6,7 +6,7 @@ Repository to house all things related to mtm-svd analysis of climate data
 - calculate annual means function
 - python scripts that run a variety of experiments/analyses
 
-## Instructions
+## Instructions for MTM-SVD analysis 
 
 1. Download CESM LME data from https://www.cesm.ucar.edu/community-projects/lme
 2. Run mtmsvd_preprocessing.py routing the path to your dowloaded data

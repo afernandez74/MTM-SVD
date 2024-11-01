@@ -114,7 +114,7 @@ year_f = 1400
 # fo = 0.023 #~43 yr
 fo = 1/23
 
-case = 'ALL'
+case = 'ALL_FORCING'
 unforced = False
 run = 1
 NA = False

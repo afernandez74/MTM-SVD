@@ -362,9 +362,9 @@ for run, serie in series_VOLC_unf.items():
 #                                                 'NW' : nw, 'nfft':npad})
     
 #CNTL
-psd_CNTL = series_cntl.spectral(method = 'mtm',
-                                        settings ={
-                                            'NW' : nw, 'nfft':npad})
+# psd_CNTL = series_cntl.spectral(method = 'mtm',
+#                                         settings ={
+#                                             'NW' : nw, 'nfft':npad})
 #%% AF_ONLY forc unforc MTM spectra fig
 
 whole_spec = False
@@ -476,8 +476,8 @@ signif_VOLC_unf_series = signif_VOLC_unf.signif_qs.psd_list
 # signif_ORBITAL_series = signif_ORBITAL.signif_qs.psd_list
 
 #CNTL
-signif_CNTL = psd_CNTL.signif_test(number=sig_n, qs=qs)
-signif_CNTL_series = signif_CNTL.signif_qs.psd_list
+# signif_CNTL = psd_CNTL.signif_test(number=sig_n, qs=qs)
+# signif_CNTL_series = signif_CNTL.signif_qs.psd_list
 #%% Get results in numpy arrays (out of Pyleoclim)
 
 # All Forcing

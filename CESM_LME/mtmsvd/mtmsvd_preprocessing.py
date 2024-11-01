@@ -11,6 +11,7 @@ import os
 #%% declare paths and read file names for each experiment
 
 # path to CESM LME data 
+# replace with path to your download of CESM LME data
 path = '/Volumes/AlejoED/Work/MannSteinman_Proj/Data/CESM_LME_data/CESM_LME/CESM_LME_tas/'
 
 path_CNTL = path + 'CNTL/'

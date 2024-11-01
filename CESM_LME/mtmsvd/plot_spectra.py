@@ -99,32 +99,6 @@ for case_i in cases:
 
 del ds, case_i, key, value, case_str, lfv_dic, lfv_unforced_dic
 
-#%% adjustments
-# freq = lfv['ALL_FORCING_001_lfv'].freq.data
-# freq_obs = lfv_obs.freq
-
-# # calculate secular means for all spectra
-# nw = 2
-# N_obs = 174
-# N_mod = 1000
-# fr_sec_obs = nw/N_obs
-# fr_sec_mod = nw/N_mod
-# fr_sec_obs_ix = np.where(freq_obs < fr_sec_obs)[0][-1] 
-# fr_sec_mod_ix = np.where(freq < fr_sec_mod)[0][-1] 
-
-# # means
-# mod_mean = lfv_by_case['ALL'].sel(run=0)[fr_sec_mod_ix:].mean()
-# obs_mean = lfv_obs[fr_sec_obs_ix:].mean()
-
-# #medians
-# mod_median = lfv_by_case['ALL'].sel(run=0)[fr_sec_mod_ix:].median()
-# obs_median = lfv_obs[fr_sec_obs_ix:].median()
-
-
-# adjust confidence intervals 
-# 50% non-secular CI must match median of spectra
-
-
 #%% Calculate means and stds for each case
 
 lfv_means = {}

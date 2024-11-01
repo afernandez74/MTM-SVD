@@ -58,7 +58,10 @@ NA = True # Analyze North Atlantic surface temperature only
 unforced = True # Analyze the unforced data
 
 # If chunk == True, input date range for analysis in years
+
 chunk = True # Analyze a specific timperiod of the data
+
+#if chunk, define the period of analysis
 year_i = 1150
 year_f = 1400
 
@@ -66,9 +69,11 @@ LFV = {}
 
 dat = CESM_LME_unforced if unforced else CESM_LME
 
+#loop through each case of CESM
 for case_i, ds_i in dat.items():
+    
     ds_i = ds_i.TS
-
+    # obtain NA masked data if NA
     ds_i = ds_i.where(NA_mask==1) if NA else ds_i
 
     print('case='+case_i)
@@ -92,8 +97,11 @@ for case_i, ds_i in dat.items():
 
         tas_2d = reshape_3d_to_2d(tas_np)
         print(f'calculating LFV spectrum {case_i}')
-        freq,lfv = mtm_svd_lfv(tas_2d, nw, kk, dt, w)
 
+        # calculate the LFV spectrum
+        freq,lfv = mtm_svd_lfv(tas_2d, nw, kk, dt, w)
+        
+        # assign results to xr dataarray
         spectrum = xr.DataArray(
             data = lfv,
             dims = 'freq',
@@ -111,7 +119,11 @@ for case_i, ds_i in dat.items():
 
             tas_2d = reshape_3d_to_2d(tas_np[:,i,:,:])
             print(f'calculating LFV spectrum {case_i} no. {i+1}')
+
+            # calculate the LFV spectrum
             freq,lfv = mtm_svd_lfv(tas_2d, nw, kk, dt, w)
+            
+            # assign results to xr dataarray
             spectrum = xr.DataArray(
                 data = lfv,
                 dims = 'freq',
@@ -121,15 +133,15 @@ for case_i, ds_i in dat.items():
 
             LFV[f'{case_i}_{i:03}_lfv'] = spectrum
 
-# merge all dataArrays into a single dataset
+# merge all dataArrays into a single dataset|
 lfv = xr.Dataset(LFV)
 lfv.attrs["period"] = f'{year_i}-{year_f}'
 
+# name file to save
 name = 'lfv'
 name = name + f'_{year_i:04}-{year_f:04}'if chunk else name
 name = name + '_NA' if NA else name
 name = name + '_unforc' if unforced else name
-name = name + '_AF_ONLY' if AF_ONLY else name
 
 #save results dataset as .nc file
 path = os.path.expanduser('~/mtm_local/CESM_LME/mtm_svd_results/lfv/')
@@ -141,7 +153,7 @@ lfv.to_netcdf(path + name +'.nc')
 fig, ax = plt.subplots(figsize=(12, 6))
 ax.set_xscale('log')
 for var_name, da in lfv.data_vars.items():
-    da.plot(xlim = [0.01,0.033333],ax =ax)
+    da.plot(xlim = [0.01,0.5],ax =ax)
 ax.set_title(f'AF_ONLY_{year_i}-{year_f}\ {name}')
 
 
@@ -206,27 +218,6 @@ name = name + '_unforc' if unforced else name
 
 path = os.path.expanduser('~/mtm_local/CESM_LME/mtm_svd_results/lfv/')
 np.save(path+name+'.npy',conflevels)
-
-# # =============================================================================
-# # Rescaling of confidence intervals 
-# # =============================================================================
-
-# fr_sec = nw/(tas_ref_2d.shape[0]*dt) # secular frequency value
-# fr_sec_ix = np.where(conffreq < fr_sec)[0][-1] 
-
-# # load CNTL lfv 
-# path = os.path.expanduser("~/mtm_local/CESM_LME/mtm_svd_results/lfv/")
-# lfv_ref = xr.open_dataset(path + 'CNTL.nc')
-
-# #calculate mean for non-secular band only 
-# lfv_mean = lfv_ref.isel(freq=slice(fr_sec_ix,-1)).mean()
-# lfv_mean = np.nanmean(lfv_ref[fr_sec_ix:]) # mean of lfv spectrum in the nonsecular band 
-# mean_ci = conflevels[-1,-1] # 50% confidence interval array (non secular)
-
-# adj_factor = lfv_mean/mean_ci # adjustment factor for confidence intervals
-# adj_ci = conflevels * adj_factor # adjustment for confidence interval values
-
-# np.save(path+'conf_int_CNTL.npy',conflevels)
 
 #%% MTM_SVD analysis of ensemble mean -> forced signal
 

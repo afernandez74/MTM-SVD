@@ -1,10 +1,9 @@
 # MTM-SVD
-Repository to house all things related to mtm-svd analysis of climate data
+Repository for Python implementation of MTM-SVD method of spatiotemporal signal detection and reconstruction.
 
 # Contents
-- mtm-svd functions (lfv, conf intervals, reconstruction and envel)
-- calculate annual means function
-- python scripts that run a variety of experiments/analyses
+- CESM_LME: folder with necessary MTM and MTM-SVD analysis performed for publication "Multidecadal Temperature Variability in the Community Earth System Model Last Millennium Ensemble". Fernandez et al. (2024)
+
 
 ## Notes on MTM-SVD analysis 
 

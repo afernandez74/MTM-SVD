@@ -28,6 +28,7 @@ https://github.com/mathildejutras/mtm-svd-python
 
 Method developed by Mann and Park (1994) ****
 
+## References
 
   **  Khider, Deborah, Emile-Geay, Julien, Zhu, Feng, James, Alexander, Landers, Jordan, Kwan, Myron, & Athreya, Pratheek. (2022). Pyleoclim: A Python package for the analysis and visualization of paleoclimate data (v0.9.1). Zenodo. https://doi.org/10.5281/zenodo.7523617
 

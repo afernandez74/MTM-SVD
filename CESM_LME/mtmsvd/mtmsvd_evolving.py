@@ -96,7 +96,7 @@ year_f = int(ds_ref.year[-1].values - np.floor(wndw/2))
 LFV = {}
 
 if unforced:
-    dat = CESM_LME_unforced
+    dat = CESM_LMEd_unforced
 elif EM:
     dat = CESM_LME_EM
 else:

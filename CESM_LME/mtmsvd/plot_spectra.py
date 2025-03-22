@@ -8,6 +8,7 @@ import os
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from scipy.stats import ks_2samp # compare datasets 
 #%% load data
 
 path = os.path.expanduser('~/mtm_local/CESM_LME/mtm_svd_results/lfv/')
@@ -170,12 +171,18 @@ plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 del BIGGER_SIZE, MEDIUM_SIZE, SMALL_SIZE
 
 #%% Box-whisker plots of lfv spread 
+freq_range = slice(1/100,1/20)
+
+stat, p_value_AF = ks_2samp(lfv_means['ALL'].sel(freq = freq_range).values, lfv_means_unf['ALL'].sel(freq = freq_range).values)
+print(f"Wilcoxon Test Statistic AF: {stat:.4f}, p-value: {p_value_AF:.6f}")
+stat, p_value_VOLC = ks_2samp(lfv_means['VOLC'].sel(freq = freq_range).values, lfv_means_unf['VOLC'].sel(freq = freq_range).values)
+print(f"Wilcoxon Test Statistic VOLC: {stat:.4f}, p-value: {p_value_VOLC:.6f}")
+
 fig = plt.figure(figsize=(30,12))
 ax = fig.add_axes([0.1,0.1,0.5,0.8])
 [plt.axhline(y=i, color='black', linestyle='--', alpha=.8, linewidth = 1.5) for i in ci[:,1]]
 plt.ylim(0.3,1.0)
 
-freq_range = slice(1/100,1/20)
 
 x_labels = ['ALL','ALL unf', 'VOLC', 'VOLC unf']
 

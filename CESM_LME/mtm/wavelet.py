@@ -7,6 +7,7 @@ Created on Fri Apr 12 09:47:17 2024
 """
 
 import pyleoclim as pyleo
+import waipy
 import numpy as np
 import xarray as xr
 import os
@@ -78,7 +79,7 @@ del BIGGER_SIZE, MEDIUM_SIZE, SMALL_SIZE
 # weights.name = "weights"
 
 # NA = True
-# case = 'VOLC'
+# case = 'ALL_FORCING'
 # unforced = False
 # ensemble_mean = True
 # run = 12
@@ -135,7 +136,7 @@ del BIGGER_SIZE, MEDIUM_SIZE, SMALL_SIZE
 
 # name = name + '_unforc' if unforced else name
 
-# waipy.wavelet_plot(name, time, data_norm, dtmin, result, filename = (path+name+'.svg'))
+# waipy.wavelet_plot(name, time, data_norm, dtmin, result, filename = 'test')
 #%% wavelet with pyleoclim
     
 year_i = 851
@@ -176,12 +177,13 @@ data_ser = pyleo.Series(
 
 wave = data_ser.wavelet(
     settings = {'pad':True},
-    freq_kwargs={'fmin':1/200,'fmax':1/5,'nf':100}).signif_test(
-        method = 'CN',number=1000,qs = [0.5,0.9])
-
+    # freq_kwargs={'fmin':1/200,'fmax':1/5,'nf':100}
+    ).signif_test(
+        method = 'ar1sim',number=1000,qs = [0.5,0.9])
+#%% plot wavelet
 yticks=[100,90,80,70,60,50,40,30,20]
 
-contourf_style = {'cmap': 'turbo', 
+contourf_style = {'cmap': 'RdBu_r', 
                   'origin': 'lower', 
                   'levels': 15}
 title = f'scalogram {case}'

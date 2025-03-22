@@ -18,6 +18,8 @@ path = os.path.expanduser('~/mtm_local/CESM_LME/mtm_svd_results/lfv_evo/')
 
 files = [entry for entry in os.listdir(path) if not entry.startswith('.')]
 
+cmap = 'inferno'
+
 # load all evo spectra
 ix = next((i for i, file in enumerate(files) if '_forc.nc' in file), None)
 lfv = xr.open_mfdataset(path+files[ix])
@@ -211,6 +213,7 @@ case = 'ALL'
 NA = True
 whole_spec = False
 
+
 save_fig = input("Save fig? (y/n):").lower()
 
 
@@ -268,7 +271,7 @@ for run_i in range(len(lfv_by_case[case].run)):
         # robust = True,
         vmin = 0.4,
         vmax = 0.8,# if NA else 0.8,
-        cmap = 'jet',
+        cmap = cmap,
         levels = 50
         )
     p1_ci = dat[case].sel(run = run_i).plot.contour(
@@ -292,7 +295,7 @@ for run_i in range(len(lfv_by_case[case].run)):
         # robust = True,
         vmin = 0.4,
         vmax = 0.8,# if NA else 0.8,
-        cmap = 'jet',
+        cmap = cmap,
         levels = 50
         )
     p2_ci = dat_unf[case].sel(run = run_i).plot.contour(
@@ -333,10 +336,9 @@ for run_i in range(len(lfv_by_case[case].run)):
         
 
 #%% Plot mean of a case
-case = 'ALL'
-NA = True
+case = 'VOLC'
+NA = False
 whole_spec = False
-
 dat = lfv_by_case_NA if NA else lfv_by_case
 dat_unf = lfv_by_case_unf_NA if NA else lfv_by_case_unf
 
@@ -387,7 +389,7 @@ dat[case].mean(dim = 'run').plot.contourf(
     # robust = True,
     vmin = 0.4,
     vmax = 0.8 if NA else 0.8,
-    cmap = 'turbo',
+    cmap = cmap,
     levels = 15
     )
 
@@ -412,7 +414,7 @@ dat_unf[case].mean(dim = 'run').plot.contourf(
     # robust = True,
     vmin = 0.4,
     vmax = 0.8 if NA else 0.8,
-    cmap = 'turbo',
+    cmap = cmap,
     levels = 15
     )
 dat_unf[case].mean(dim = 'run').plot.contour(
@@ -494,7 +496,7 @@ dat[case].sel(run = 0).plot.contourf(
     vmin = 0.4,
     # vmax = 0.8 if NA else 0.8,
     robust= True,
-    cmap = 'jet',
+    cmap = cmap,
     levels = 50
     )
 
@@ -578,7 +580,7 @@ dat['CNTL'].sel(run = 0).plot.contourf(
     vmin = 0.4,
     # vmax = 0.8 if NA else 0.8,
     robust= True,
-    cmap = 'jet',
+    cmap = cmap,
     levels = 50
     )
 

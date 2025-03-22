@@ -69,7 +69,7 @@ del BIGGER_SIZE, MEDIUM_SIZE, SMALL_SIZE
 
 #%% create pyleoclim ensemble series objects 
 
-NA = True
+NA = False
 
 # year_i = 851
 year_i = 851
@@ -217,56 +217,56 @@ for run, dat in data.groupby('run'):
 
     series_VOLC_unf[f'{run:03}'] = series
 
-# # =============================================================================
-# # Solar  ensemble
-# # =============================================================================
-# case = 'SOLAR'
+# =============================================================================
+# Solar  ensemble
+# =============================================================================
+case = 'SOLAR'
 
-# data = CESM_LME[case]
-# if NA:
-#     data = data.where(NA_mask == 1)
+data = CESM_LME[case]
+if NA:
+    data = data.where(NA_mask == 1)
 
-# data = data.weighted(weights).mean(dim = ['lat','lon'])
+data = data.weighted(weights).mean(dim = ['lat','lon'])
 
-# series_SOLAR={}
+series_SOLAR={}
 
-# for run, dat in data.groupby('run'):
-#     series = pyleo.Series(
-#         time=dat.year,
-#         value=dat.TS.to_numpy(),
-#         time_name="years AD",
-#         time_unit="yr",
-#         value_name="GMSAT",
-#         value_unit="K",
-#         label=run)
+for run, dat in data.groupby('run'):
+    series = pyleo.Series(
+        time=dat.year,
+        value=dat.TS.to_numpy(),
+        time_name="years AD",
+        time_unit="yr",
+        value_name="GMSAT",
+        value_unit="K",
+        label=run)
 
-#     series_SOLAR[f'{run:03}'] = series
+    series_SOLAR[f'{run:03}'] = series
 
 
-# # =============================================================================
-# # Orbital  ensemble
-# # =============================================================================
-# case = 'ORBITAL'
+# =============================================================================
+# Orbital  ensemble
+# =============================================================================
+case = 'ORBITAL'
 
-# data = CESM_LME[case]
-# if NA:
-#     data = data.where(NA_mask == 1)
+data = CESM_LME[case]
+if NA:
+    data = data.where(NA_mask == 1)
 
-# data = data.weighted(weights).mean(dim = ['lat','lon'])
+data = data.weighted(weights).mean(dim = ['lat','lon'])
 
-# series_ORBITAL={}
+series_ORBITAL={}
 
-# for run, dat in data.groupby('run'):
-#     series = pyleo.Series(
-#         time=dat.year,
-#         value=dat.TS.to_numpy(),
-#         time_name="years AD",
-#         time_unit="yr",
-#         value_name="GMSAT",
-#         value_unit="K",
-#         label=run)
+for run, dat in data.groupby('run'):
+    series = pyleo.Series(
+        time=dat.year,
+        value=dat.TS.to_numpy(),
+        time_name="years AD",
+        time_unit="yr",
+        value_name="GMSAT",
+        value_unit="K",
+        label=run)
 
-#     series_ORBITAL[f'{run:03}'] = series
+    series_ORBITAL[f'{run:03}'] = series
 
 # =============================================================================
 # Control
@@ -344,27 +344,27 @@ for run, serie in series_VOLC_unf.items():
                                             settings ={
                                                 'NW' : nw, 'nfft':npad})
 
-# # Solar
-# psd_SOLAR = {}
+# Solar
+psd_SOLAR = {}
 
-# for run, serie in series_SOLAR.items():
-#     psd_SOLAR[run] = serie.spectral(method = 'mtm',
-#                                             settings ={
-#                                                 'NW' : nw, 'nfft':npad})
+for run, serie in series_SOLAR.items():
+    psd_SOLAR[run] = serie.spectral(method = 'mtm',
+                                            settings ={
+                                                'NW' : nw, 'nfft':npad})
 
 
-# # Orbital
-# psd_ORBITAL = {}
+# Orbital
+psd_ORBITAL = {}
 
-# for run, serie in series_ORBITAL.items():
-#     psd_ORBITAL[run] = serie.spectral(method = 'mtm',
-#                                             settings ={
-#                                                 'NW' : nw, 'nfft':npad})
+for run, serie in series_ORBITAL.items():
+    psd_ORBITAL[run] = serie.spectral(method = 'mtm',
+                                            settings ={
+                                                'NW' : nw, 'nfft':npad})
     
 #CNTL
-# psd_CNTL = series_cntl.spectral(method = 'mtm',
-#                                         settings ={
-#                                             'NW' : nw, 'nfft':npad})
+psd_CNTL = series_CNTL.spectral(method = 'mtm',
+                                        settings ={
+                                            'NW' : nw, 'nfft':npad})
 #%% AF_ONLY forc unforc MTM spectra fig
 
 whole_spec = False

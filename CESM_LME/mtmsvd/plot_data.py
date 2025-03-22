@@ -152,7 +152,7 @@ series_ALL_ensemb_unf = pyleo.EnsembleSeries(list(series_ALL_unf.values()))
 
 #%% NA temperature anomalies figure AF_ONLY
 
-filter_per=20
+filter_per=40
 series_ALL_ensemb_anom = pyleo.EnsembleSeries([])
 for series in series_ALL_ensemb.series_list:
     anom = series.center()

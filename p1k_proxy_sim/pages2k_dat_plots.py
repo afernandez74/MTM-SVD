@@ -7,11 +7,14 @@ Created on Thu Dec  7 07:41:24 2023
 """
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+import matplotlib.path as mpath
 import os
 import xarray as xr 
 from scipy.stats import zscore
 import pandas as pd
 import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+
 
 # Set global settings for publication-style plots
 plt.rcParams.update({
@@ -41,8 +44,9 @@ plt.rcParams.update({
 })
 
 #%% load pages2k datasets
-start_year = 850
-path = os.path.expanduser(f"~/mtm_local/pages2k/datasets{start_year}_1850/")
+start_year = 1600
+AMV_records_only = True
+path = os.path.expanduser(f"~/mtm_local/proxy_data/compiled_datasets/datasets{start_year}_1850/")
 files = os.listdir(path)
 files = [entry for entry in files if not entry.startswith('.')]
 files = sorted(files)
@@ -74,11 +78,14 @@ for file in files:
         "lon": ds_i.attrs.get("lon", None),
         "elev": ds_i.attrs.get("elev", None),
         "direction": ds_i.attrs.get("direction", None),
+        "AMV": ds_i.attrs.get("AMV",None)
     }
     records.append(record)
 
 archives = pd.DataFrame(records)
 archive_types = set(archives.archive_type)
+if AMV_records_only:
+    archives = archives.loc[archives['AMV']=='Yes']
 #%%
 # read data, normalize and assign to archive_dat dictionary 
 # archive_dat keys-> archive types and values -> lists with all datasetsn normalized
@@ -89,7 +96,7 @@ for archive_type in archive_types:
     archive_dat[archive_type]=[]    
     for file in files:
         ds_i = xr.open_dataset(path+file)
-        
+        AMV_i = ds_i.AMV
         if ds_i.archive_type == archive_type:
             attrs = ds_i.attrs
             if attrs['direction'] == 'positive':
@@ -97,8 +104,13 @@ for archive_type in archive_types:
             else: 
                 ds_i = -1* (ds_i - ds_i.mean()) / ds_i.std() # standardize and flip
             ds_i.attrs = attrs
-            archive_dat[archive_type].append(ds_i) #append to appropriate archive entry
-            all_archs.append(ds_i)
+            if not AMV_records_only:
+                archive_dat[archive_type].append(ds_i) #append to appropriate archive entry
+                all_archs.append(ds_i)
+            elif AMV_i:
+                archive_dat[archive_type].append(ds_i) #append to appropriate archive entry
+                all_archs.append(ds_i)
+            
 #%%combine lists in dat_dic for easier handling of data and plotting
 
 dat_dic = {}
@@ -116,7 +128,7 @@ for archive_type, list_i in archive_dat.items():
     ds_new = xr.merge(ds_list)
     dat_dic[archive_type] = ds_new
         
-#%%
+#%%plot timeseries mean and standard deviations
 
 for archive_type,ds in dat_dic.items():
     mean_ts = ds.to_array(dim='arch').mean(dim='arch')
@@ -162,10 +174,27 @@ style_dict = {
 counts = archives.groupby('archive_type').size().reset_index(name='count')
 
 # Create the figure and map
-fig = plt.figure()
-ax = fig.add_subplot(1,1,1, projection=ccrs.Robinson(central_longitude=80), facecolor=None)
+
+fig_size = (10,10) if AMV_records_only else (10, 5) 
+fig = plt.figure(figsize=fig_size)
+
+projection = ccrs.AlbersEqualArea(central_longitude=-40) if AMV_records_only else ccrs.Robinson(central_longitude=-40)
+
+ax = fig.add_subplot(1,1,1, projection=projection, facecolor=None)
+
+if AMV_records_only:
+    ax.set_extent([-100,40,0,80],crs=ccrs.PlateCarree())
+    vertices = [(lon, 0) for lon in range(-100, 31, 1)] + \
+           [(lon, 80) for lon in range(30, -101, -1)]
+    boundary = mpath.Path(vertices)
+    ax.set_boundary(boundary, transform=ccrs.PlateCarree())
+
 ax.set_global()
 ax.coastlines(zorder=1)
+ax.add_feature(cfeature.LAND, edgecolor='black', facecolor='gainsboro')
+ax.add_feature(cfeature.COASTLINE, linewidth=0.8)
+ax.add_feature(cfeature.BORDERS, linestyle=':')
+
 ax.gridlines(linewidth=0.5,zorder=0.9)
 # Plot data points using the predefined styles
 for _, row in archives.iterrows():
@@ -188,12 +217,12 @@ ax.legend(by_label.values(), by_label.keys(),
 plt.title(f'Compiled archives for {start_year}-1850CE \nN={counts.sum(axis=0)[1]}')
 plt.show()
 #%% indiv plots 
-for arch in all_archs:
-    fig=plt.subplots()
-    arch.proxy_data.plot()
-    plt.title(arch.data_set_name)
-    plt.savefig(
-        os.path.expanduser(f'/Users/afer/mtm_local/pages2k/indiv_ts_plots{start_year}/')+
-        arch.data_set_name+'.png',
-        dpi=100)
-    plt.close()
+# for arch in all_archs:
+#     fig=plt.subplots()
+#     arch.proxy_data.plot()
+#     plt.title(arch.data_set_name)
+#     plt.savefig(
+#         os.path.expanduser(f'/Users/afer/mtm_local/pages2k/indiv_ts_plots{start_year}/')+
+#         arch.data_set_name+'.png',
+#         dpi=100)
+#     plt.close()

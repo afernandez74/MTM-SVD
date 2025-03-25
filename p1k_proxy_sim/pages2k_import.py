@@ -6,34 +6,36 @@ import numpy as np
 import xarray as xr
 import lipd
 import matplotlib.pyplot as plt
-from import_funcs import lipd2df
-from import_funcs import annualize_data
-from import_funcs import mask_data 
+from proxy_import_funcs import lipd2df
+from proxy_import_funcs import annualize_data
+from proxy_import_funcs import mask_data 
 
 #%% pages2k summary table
-path = os.path.expanduser('~/mtm_local/pages2k/')
-summary_table = pd.read_csv(path+'/pages2k_proxy_summary_table.csv')
+path = os.path.expanduser('~/mtm_local/proxy_data/fernandez_comp/metadata/')
+summary_table = pd.read_csv(path+'pages2k_summary_table.csv')
 
 #%% 1)filter proxies with criteria
 df = summary_table
 
-start_year = 850
+start_year = 1600
 end_year = 1850
 min_resolution = 10
 
-df['min_year_int'] = df['Min Year (CE)']#.apply(lambda x: -int(x[1:]) if x.startswith('−') else int(x))
+df['min_year_int'] = df['min_year']#.apply(lambda x: -int(x[1:]) if x.startswith('−') else int(x))
 start_good = df['min_year_int'] <= start_year
 
-df['max_year_int'] = df['Max Year (CE)']
+df['max_year_int'] = df['max_year']
 end_good = df['max_year_int'] >= end_year
 
-df['resolution_int'] = df['Resolution (yr)'].apply(lambda x: int(x) if not x.startswith('<') else 0)
+df['resolution_int'] = df['resolution'].apply(lambda x: int(x) if not x.startswith('<') else 0)
 resolution_good = df['resolution_int'] <= min_resolution
 
-all_good = start_good & end_good & resolution_good
+in_comps_good = df['in_comps'] == 'yes'
+
+all_good = start_good & end_good & resolution_good & in_comps_good
 
 df_good = df[all_good]
-
+#make sure passes composites thing
 del start_good, end_good, resolution_good, all_good, df
 
 #%% 2) read in ALL lipd files
@@ -49,14 +51,25 @@ with open (os.path.expanduser('~/mtm_local/pages2k/LiPD_py_dic/df_all'), 'rb') a
 del path, files
 #%% 3) filter lipd files based on criteria
 
-df_filtered = df_all[df_all['paleoData_pages2kID'].isin(df_good['PAGES ID'])]
-df_filtered['resolution'] = df_filtered['paleoData_pages2kID'].map(df_good.set_index('PAGES ID')['resolution_int'])
-df_filtered['site_name'] = df_filtered['paleoData_pages2kID'].map(df_good.set_index('PAGES ID')['Site Name'])
-df_filtered['direction'] = df_filtered['paleoData_pages2kID'].map(df_good.set_index('PAGES ID')['direction'])
+df_filtered = df_all[df_all['paleoData_pages2kID'].isin(df_good['PAGES_ID'])]
+df_filtered['resolution'] = df_filtered['paleoData_pages2kID'].map(df_good.set_index('PAGES_ID')['resolution_int'])
+df_filtered['site_name'] = df_filtered['paleoData_pages2kID'].map(df_good.set_index('PAGES_ID')['site_name'])
+df_filtered['direction'] = df_filtered['paleoData_pages2kID'].map(df_good.set_index('PAGES_ID')['direction'])
+df_filtered['AMV'] = df_filtered['paleoData_pages2kID'].map(df_good.set_index('PAGES_ID')['AMV'])
+df_filtered['in_comps'] = df_filtered['paleoData_pages2kID'].map(df_good.set_index('PAGES_ID')['in_comps'])
 df = df_filtered
 del df_filtered#, df_good
 
 #%% 4) interpolate to annual resolution and get rid of data outside range
+
+# fix nans 
+for ix,row in df.iterrows():
+    # print(row)
+    if any(isinstance(x, str) for x in row['paleoData_values']):
+        dat = row['paleoData_values']
+        dat = [np.nan if x == "nan" else x for x in dat]
+        df.at[ix,'paleoData_values'] = dat
+    
 
 # interpolate to annual resolution and flip descending timeseries
 df_interp = df.apply(annualize_data, axis = 1)
@@ -83,6 +96,7 @@ for index, row in df_interp.iterrows():
     lon = row['geo_meanLon']
     elev = row['geo_meanElev']
     direction = row['direction']
+    AMV = row['AMV']
 
     # create xarray dataarrays
     year_coord = xr.DataArray(year, dims='time', coords={'time': year}, attrs={'units': 'year AD'})
@@ -91,7 +105,9 @@ for index, row in df_interp.iterrows():
     attrs_dic={'proxy_type':proxy_type,'units': proxy_units, 'site_name':site_name,
     'variable_name':variable_name,'archive_type':archive_type,
     'data_set_name':data_set_name,'pages2kID':pages2kID,
-    'lat':lat, 'lon':lon,'elev':elev, 'direction':direction}
+    'lat':lat, 'lon':lon,'elev':elev, 'direction':direction,
+    'AMV':AMV
+    }
 
     # create xarray dataset
     ds_i = xr.Dataset({'proxy_data': values_array})

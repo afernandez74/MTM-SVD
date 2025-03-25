@@ -76,10 +76,14 @@ def lipd2df(lipd_dirpath, pkl_filepath, col_str=[
 # also flips descending timeseries
 def annualize_data(row):
         
+    # get rid of NaN values beforehand
+    if any(np.isnan(x) for x in row['paleoData_values']):     
+        nan_indices = [i for i, x in enumerate(row['paleoData_values']) if np.isnan(x)]
+        row['paleoData_values'] = [x for i, x in enumerate(row['paleoData_values']) if i not in nan_indices]
+        row['year'] = [x for i, x in enumerate(row['year']) if i not in nan_indices]
+    
     year_array = np.array(row['year'])
     data_array = np.array(row['paleoData_values'])
-    if np.issubdtype(data_array.dtype, np.str_):
-        data_array = data_array.astype(float)
     
     name = row['paleoData_pages2kID']
     print (name)

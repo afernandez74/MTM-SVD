@@ -8,15 +8,14 @@ import numpy as np
 import xarray as xr
 import lipd
 import matplotlib.pyplot as plt
-from import_funcs import lipd2df, annualize_data, annualize_data_AF, mask_data
+from proxy_import_funcs import lipd2df, annualize_data, annualize_data_AF, mask_data
 
 #%% pages2k summary table
-path = os.path.expanduser('~/mtm_local/pages2k/')
-p2k_summary_table = pd.read_csv(path+'/pages2k_proxy_summary_table.csv')
+path = os.path.expanduser('~/mtm_local/proxy_data/fernandez_comp/metadata/')
+p2k_summary_table = pd.read_csv(path+'pages2k_summary_table.csv')
 
 # Fernandez summary table
-path = os.path.expanduser('~/mtm_local/proxy_data/fernandez_comp/metadata/Fernandez_summary_table.csv')
-AF_summary_table = pd.read_csv(path)
+AF_summary_table = pd.read_csv(path+'fernandez_summary_table.csv')
 
 #drop records whose data has not been added to the 'Usables' folder
 AF_archives = AF_summary_table.drop(AF_summary_table[AF_summary_table.Usables!='Yes'].index)
@@ -30,7 +29,7 @@ files = [entry for entry in files if not entry.startswith('.')]
 for ix, arch in AF_archives.iterrows():
 
     rez = arch.resolution_int
-    name = arch.Site_ID
+    name = arch.PAGES_ID
     print(name)
     file = [i for i in files if name in i][0]
     
@@ -38,14 +37,15 @@ for ix, arch in AF_archives.iterrows():
     proxy_type = arch['Archive']
     proxy_units = arch['units']
     variable_name = arch['variable']
-    site_name = arch['Site Name']
+    site_name = arch['site_name']
     archive_type = arch['Archive']
     data_set_name = name
     pages2kID = name
-    lat = arch['Lat']
-    lon = arch['Lon']
+    lat = arch['lat']
+    lon = arch['lon']
     elev = np.nan
     direction = arch['Direction']
+    AMV = arch['AMV']
 
     dat = pd.read_csv(path + file, dtype={"proxy_data": float}, na_values = 'NA')
     
@@ -83,7 +83,7 @@ for ix, arch in AF_archives.iterrows():
     attrs_dic={'proxy_type':proxy_type,'units': proxy_units, 'site_name':site_name,
     'variable_name':variable_name,'archive_type':archive_type,
     'data_set_name':data_set_name,'pages2kID':pages2kID,
-    'lat':lat, 'lon':lon,'elev':elev, 'direction':direction}
+    'lat':lat, 'lon':lon,'elev':elev, 'direction':direction, 'AMV':AMV}
 
     # create xarray dataset
     ds_i = xr.Dataset({'proxy_data': values_array})
